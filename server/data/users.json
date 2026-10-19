@@ -1,0 +1,10 @@
+[
+  {
+    "id": "usr_admin",
+    "username": "admin",
+    "role": "administrator",
+    "salt": "e4840b26a78d07b6a03b09edb8b82cea",
+    "hash": "7f2a0409f757d0d023f28bcc358f52a98041d9b70446c96ecd9903cdd8e8f698fb2f9d428f972d62d719eb27e859de3600695fe73263d90bb3583f82a50c6a77",
+    "createdAt": "2026-10-13T18:41:54.707Z"
+  }
+]

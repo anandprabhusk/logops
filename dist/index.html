@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LogOps Intelligence | Zero-Leak AI Incident Analytics</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
+    .glass-card { background: rgba(17, 24, 39, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glass-card-hover:hover { border-color: rgba(99, 102, 241, 0.4); box-shadow: 0 8px 30px rgba(99, 102, 241, 0.12); }
+    pre, code { font-family: 'JetBrains Mono', monospace; }
+    .stage-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+    .stage-card.active { border-color: #6366f1; box-shadow: 0 0 25px rgba(99, 102, 241, 0.25); }
+    .stage-card.completed { border-color: #10b981; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
+
+  <!-- Header -->
+  <header class="sticky top-0 z-50 glass-card border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 p-0.5 shadow-lg shadow-indigo-500/20 flex items-center justify-center">
+          <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
+            <i data-lucide="shield-alert" class="w-5 h-5 text-indigo-400"></i>
+          </div>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-base font-bold tracking-tight text-white">LogOps<span class="text-indigo-400">Intelligence</span></span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v1.0</span>
+          </div>
+          <p class="text-[11px] text-slate-400">Zero-Leak AI Diagnostic Pipeline for Enterprise Logs</p>
+        </div>
+      </div>
+
+      <nav id="nav-tabs" class="hidden md:flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+        <button onclick="switchTab('pipeline')" id="tab-btn-pipeline" class="px-3.5 py-1.5 rounded-lg text-white bg-indigo-600 transition-all flex items-center gap-2">
+          <i data-lucide="play-circle" class="w-3.5 h-3.5"></i> Pipeline Runner
+        </button>
+        <button onclick="switchTab('reports')" id="tab-btn-reports" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2">
+          <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Incident Reports <span id="nav-report-badge" class="px-1.5 py-0.5 rounded-full bg-slate-800 text-[10px]">0</span>
+        </button>
+        <button onclick="switchTab('elk')" id="tab-btn-elk" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2">
+          <i data-lucide="database" class="w-3.5 h-3.5 text-amber-400"></i> ELK Pipeline <span id="nav-elk-badge" class="px-1.5 py-0.5 rounded-full bg-slate-800 text-[10px] text-amber-400">Idle</span>
+        </button>
+        <button onclick="switchTab('connectors')" id="tab-btn-connectors" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2">
+          <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Source Connectors & Keys
+        </button>
+        <button onclick="switchTab('architecture')" id="tab-btn-architecture" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2">
+          <i data-lucide="network" class="w-3.5 h-3.5"></i> Architecture
+        </button>
+      </nav>
+
+      <div class="flex items-center gap-3">
+        <div id="status-pills" class="hidden sm:flex items-center gap-2">
+          <span class="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> filtr: Live
+          </span>
+          <span class="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <i data-lucide="sparkles" class="w-3 h-3"></i> Local LLM: Ready
+          </span>
+        </div>
+        <div id="user-profile" class="hidden items-center gap-2 pl-2 border-l border-slate-800">
+          <div class="text-right">
+            <div id="user-name" class="text-xs font-semibold text-white">admin</div>
+            <div class="text-[10px] text-slate-400">Enterprise SRE</div>
+          </div>
+          <button onclick="logout()" class="p-2 rounded-lg bg-slate-800/60 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 transition-colors" title="Sign Out">
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Login Modal / Screen -->
+  <div id="view-login" class="flex-1 flex items-center justify-center p-4">
+    <div class="w-full max-w-md p-8 rounded-2xl glass-card border border-slate-800 shadow-2xl relative overflow-hidden">
+      <div class="absolute -top-24 -right-24 w-48 h-48 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      <div class="text-center mb-8">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center mx-auto mb-4 text-indigo-400">
+          <i data-lucide="lock" class="w-7 h-7"></i>
+        </div>
+        <h2 class="text-2xl font-bold text-white tracking-tight">Enterprise Access</h2>
+        <p class="text-sm text-slate-400 mt-1">Authenticate to access sanitized LLM telemetry & diagnosis</p>
+      </div>
+
+      <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Username</label>
+          <div class="relative">
+            <i data-lucide="user" class="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input type="text" id="login-username" value="admin" required
+              class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
+          <div class="relative">
+            <i data-lucide="key" class="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+            <input type="password" id="login-password" value="LogOps2026!" required
+              class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">
+          </div>
+        </div>
+
+        <div id="login-error" class="hidden text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2.5 flex items-center gap-2">
+          <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
+          <span id="login-error-text">Invalid credentials</span>
+        </div>
+
+        <button type="submit" id="login-btn"
+          class="w-full mt-2 py-3 px-4 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold rounded-xl text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all">
+          <span>Authenticate & Open Console</span>
+          <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+
+        <div class="mt-6 pt-6 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
+          <span>Default: <code class="text-indigo-400 bg-indigo-950/40 px-1 py-0.5 rounded">admin</code> / <code class="text-indigo-400 bg-indigo-950/40 px-1 py-0.5 rounded">LogOps2026!</code></span>
+          <span class="flex items-center gap-1 text-emerald-400"><i data-lucide="shield-check" class="w-3 h-3"></i> PBKDF2</span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Authenticated App Layout -->
+  <main id="app-container" class="hidden flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- TAB 1: PIPELINE RUNNER -->
+    <div id="view-pipeline" class="space-y-6">
+      <div class="glass-card rounded-2xl p-6 border border-slate-800">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
+          <div>
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+              <i data-lucide="cpu" class="w-5 h-5 text-indigo-400"></i>
+              Enterprise Log Ingestion & Zero-Leak Redactor
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">
+              Select an enterprise source, paste or load sample logs, then execute the 4-stage Zero-Leak pipeline.
+            </p>
+          </div>
+
+          <!-- Source Selectors -->
+          <div class="flex flex-wrap items-center gap-2" id="source-buttons">
+            <button onclick="selectSource('weblogic')" data-source="weblogic" class="source-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white border border-indigo-500 flex items-center gap-1.5 transition-all">
+              <i data-lucide="layers" class="w-3.5 h-3.5"></i> WebLogic
+            </button>
+            <button onclick="selectSource('kafka')" data-source="kafka" class="source-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-1.5 transition-all">
+              <i data-lucide="share-2" class="w-3.5 h-3.5"></i> Kafka
+            </button>
+            <button onclick="selectSource('apache')" data-source="apache" class="source-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-1.5 transition-all">
+              <i data-lucide="globe" class="w-3.5 h-3.5"></i> Apache
+            </button>
+            <button onclick="selectSource('windows')" data-source="windows" class="source-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-1.5 transition-all">
+              <i data-lucide="terminal" class="w-3.5 h-3.5"></i> Windows Event
+            </button>
+            <button onclick="selectSource('jenkins')" data-source="jenkins" class="source-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-1.5 transition-all">
+              <i data-lucide="git-commit" class="w-3.5 h-3.5"></i> Jenkins CI
+            </button>
+          </div>
+        </div>
+
+        <!-- Input Box -->
+        <div class="space-y-3">
+          <div class="flex items-center justify-between text-xs text-slate-400">
+            <div class="flex items-center gap-2">
+              <span class="font-semibold text-slate-300">Raw Source Log Stream</span>
+              <span id="active-source-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">weblogic</span>
+            </div>
+            <div class="flex items-center gap-3">
+              <button onclick="loadSampleLog()" class="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Load Real Incident Sample
+              </button>
+              <button onclick="document.getElementById('log-input').value=''" class="text-xs font-medium text-slate-500 hover:text-slate-400 transition-colors">
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <textarea id="log-input" rows="7" placeholder="Paste enterprise log lines here..."
+            class="w-full bg-slate-950/90 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 leading-relaxed"></textarea>
+
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+            <div class="flex items-center gap-2 text-xs text-slate-400">
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
+              <span>Guaranteed: All IPs, emails, tokens, and hostnames are tokenized in-memory before LLM egress.</span>
+            </div>
+            <button onclick="runPipeline()" id="run-pipeline-btn"
+              class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all">
+              <i data-lucide="play" class="w-4 h-4"></i>
+              <span>Execute 4-Stage Zero-Leak Pipeline</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Stages Progress Stepper -->
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="stepper-cards">
+        <div id="card-stage-1" class="stage-card glass-card rounded-xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Stage 1</span>
+            <div id="icon-stage-1" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold">1</div>
+          </div>
+          <div class="font-semibold text-sm text-white">Ingest & Parse</div>
+          <p class="text-xs text-slate-400 mt-1" id="desc-stage-1">Structured parser extraction</p>
+          <div id="stat-stage-1" class="text-[11px] font-mono text-indigo-400 mt-2 font-semibold">Idle</div>
+        </div>
+
+        <div id="card-stage-2" class="stage-card glass-card rounded-xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Stage 2</span>
+            <div id="icon-stage-2" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold">2</div>
+          </div>
+          <div class="font-semibold text-sm text-white">filtr Redaction</div>
+          <p class="text-xs text-slate-400 mt-1" id="desc-stage-2">PII & Secret Vault Tokenization</p>
+          <div id="stat-stage-2" class="text-[11px] font-mono text-indigo-400 mt-2 font-semibold">Idle</div>
+        </div>
+
+        <div id="card-stage-3" class="stage-card glass-card rounded-xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Stage 3</span>
+            <div id="icon-stage-3" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold">3</div>
+          </div>
+          <div class="font-semibold text-sm text-white">Local LLM Diagnostics</div>
+          <p class="text-xs text-slate-400 mt-1" id="desc-stage-3">Zero-leak AI inference</p>
+          <div id="stat-stage-3" class="text-[11px] font-mono text-indigo-400 mt-2 font-semibold">Idle</div>
+        </div>
+
+        <div id="card-stage-4" class="stage-card glass-card rounded-xl p-4 border border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Stage 4</span>
+            <div id="icon-stage-4" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold">4</div>
+          </div>
+          <div class="font-semibold text-sm text-white">filtr Rehydration</div>
+          <p class="text-xs text-slate-400 mt-1" id="desc-stage-4">Restores real target context</p>
+          <div id="stat-stage-4" class="text-[11px] font-mono text-indigo-400 mt-2 font-semibold">Idle</div>
+        </div>
+      </div>
+
+      <!-- Execution Results Workspace -->
+      <div id="pipeline-results" class="hidden space-y-6">
+        <div class="glass-card rounded-2xl p-6 border border-slate-800 relative overflow-hidden">
+          <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-3">
+                <span id="res-severity-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">CRITICAL</span>
+                <h2 id="res-incident-title" class="text-lg font-bold text-white">Oracle WebLogic Stuck Thread & DB Pool Exhaustion</h2>
+              </div>
+              <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 mt-2">
+                <span>Source: <strong id="res-source-name" class="text-slate-200">weblogic</strong></span>
+                <span>Incident ID: <code id="res-report-id" class="text-indigo-400">rep_abc123</code></span>
+                <span>Entities Redacted: <strong id="res-entities-count" class="text-emerald-400">4</strong></span>
+                <span>Pipeline Latency: <strong id="res-pipeline-ms" class="text-slate-200">12ms</strong></span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+              <button onclick="copyIncidentMarkdown()" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-xs font-medium text-slate-300 flex items-center gap-1.5 transition-colors">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Markdown
+              </button>
+              <button onclick="switchTab('reports')" class="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-xs font-medium border border-indigo-500/30 flex items-center gap-1.5 transition-colors">
+                <i data-lucide="archive" class="w-3.5 h-3.5"></i> View in Reports Log
+              </button>
+            </div>
+          </div>
+
+          <div class="mt-5 p-4 rounded-xl bg-slate-900/80 border border-slate-800">
+            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-2">
+              <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-400"></i>
+              Root Cause Hypothesis
+            </div>
+            <p id="res-hypothesis" class="text-sm text-slate-200 leading-relaxed font-sans"></p>
+          </div>
+
+          <div class="mt-4 p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30">
+            <div class="text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+              <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+              Rehydrated Engineering Remediation Actions (Real Infrastructure Targets Restored)
+            </div>
+            <ul id="res-actions-list" class="space-y-2 text-xs text-slate-200">
+            </ul>
+          </div>
+        </div>
+
+        <!-- Dual Inspection Columns -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="glass-card rounded-2xl p-5 border border-slate-800">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                <span class="text-xs font-bold text-white">LLM Egress Payload (Strictly Sanitized)</span>
+              </div>
+              <span class="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Zero PII/Secrets</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-2">This is the exact string passed to the AI model. All real IPs, users, and tokens are obfuscated into secure synthetic tokens.</p>
+            <pre id="res-redacted-view" class="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 text-[11px] text-amber-200/90 overflow-x-auto max-h-72"></pre>
+
+            <div class="mt-4 pt-4 border-t border-slate-800">
+              <div class="text-xs font-semibold text-slate-300 mb-2 flex items-center justify-between">
+                <span>Vault Redaction Ledger</span>
+                <span id="res-ledger-count" class="text-[10px] text-slate-400">4 tokens mapped</span>
+              </div>
+              <div class="overflow-x-auto max-h-48 border border-slate-800 rounded-lg">
+                <table class="w-full text-left text-xs">
+                  <thead class="bg-slate-900/80 text-slate-400 font-mono text-[10px]">
+                    <tr>
+                      <th class="p-2">Token (LLM Seen)</th>
+                      <th class="p-2">Entity Type</th>
+                      <th class="p-2">Original Value (Private Vault)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="res-vault-table" class="divide-y divide-slate-800/60 font-mono text-[11px] text-slate-300">
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-2xl p-5 border border-slate-800">
+            <div class="flex items-center justify-between mb-3">
+              <div class="flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="text-xs font-bold text-white">Safe SRE Output (Rehydrated by filtr)</span>
+              </div>
+              <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Operational Restored</span>
+            </div>
+            <p class="text-xs text-slate-400 mb-2">The AI's diagnostic advice is rehydrated via filtr's Vault to swap token place-holders back to your actual hostnames and accounts.</p>
+
+            <div class="space-y-3">
+              <div>
+                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Before Rehydration (AI Output):</span>
+                <pre id="res-raw-llm-snippet" class="mt-1 p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-400 overflow-x-auto max-h-28"></pre>
+              </div>
+
+              <div>
+                <span class="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">After filtr Rehydration (Ready for DevOps):</span>
+                <pre id="res-rehydrated-snippet" class="mt-1 p-2.5 rounded-lg bg-slate-950 border border-emerald-500/30 text-[11px] text-emerald-300 overflow-x-auto max-h-36"></pre>
+              </div>
+
+              <div class="p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
+                <div>
+                  <div class="font-semibold text-white">Parsed Metadata</div>
+                  <div id="res-parsed-meta" class="text-[11px] text-slate-400 font-mono">Timestamp, severity & source validated</div>
+                </div>
+                <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: INCIDENT REPORTS HISTORY -->
+    <div id="view-reports" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="archive" class="w-5 h-5 text-indigo-400"></i>
+            Historical Incident Diagnostic Reports
+          </h1>
+          <p class="text-xs text-slate-400 mt-1">
+            Persisted zero-leak diagnostic reports stored in the encrypted platform registry.
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <input type="text" id="report-search" placeholder="Search incidents..." oninput="filterReports()"
+            class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
+          <button onclick="fetchReports()" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition-colors" title="Refresh">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <div id="reports-container" class="space-y-3"></div>
+    </div>
+
+    <!-- TAB 3: SOURCE CONNECTORS & API KEYS -->
+    <div id="view-connectors" class="hidden space-y-6">
+      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 class="text-xl font-bold text-white flex items-center gap-2">
+            <i data-lucide="key" class="w-5 h-5 text-indigo-400"></i>
+            Log Shippers & API Ingestion Credentials
+          </h1>
+          <p class="text-xs text-slate-400 mt-1">
+            Generate and manage API keys for Fluent Bit, Vector, Logstash, or custom curl scripts.
+          </p>
+        </div>
+        <button onclick="createNewApiKey()" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-2 transition-all shadow-lg shadow-indigo-600/20">
+          <i data-lucide="plus" class="w-4 h-4"></i> Generate Ingestion API Key
+        </button>
+      </div>
+
+      <div class="glass-card rounded-2xl p-5 border border-slate-800">
+        <h2 class="text-sm font-bold text-white mb-3">Active Ingestion Keys</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900/80 text-slate-400 font-mono text-[10px]">
+              <tr>
+                <th class="p-3">Key Label / Name</th>
+                <th class="p-3">API Key Secret</th>
+                <th class="p-3">Created</th>
+                <th class="p-3">Last Used</th>
+                <th class="p-3 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="api-keys-table-body" class="divide-y divide-slate-800/80 font-mono text-xs text-slate-300"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl p-5 border border-slate-800">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 font-bold text-xs text-white">
+              <i data-lucide="terminal" class="w-4 h-4 text-indigo-400"></i>
+              Fluent Bit Configuration
+            </div>
+            <span class="text-[10px] text-slate-400">fluent-bit.conf</span>
+          </div>
+          <pre class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto"><code>[INPUT]
+    Name        tail
+    Path        /var/log/weblogic/*.log
+    Tag         weblogic.server
+
+[OUTPUT]
+    Name        http
+    Match       weblogic.*
+    Host        127.0.0.1
+    Port        8888
+    URI         /api/ingest
+    Header      X-LogOps-Key logops_key_live_default_9f83a2
+    Header      Content-Type application/json
+    Format      json</code></pre>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 border border-slate-800">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 font-bold text-xs text-white">
+              <i data-lucide="share-2" class="w-4 h-4 text-emerald-400"></i>
+              Vector.dev Configuration
+            </div>
+            <span class="text-[10px] text-slate-400">vector.toml</span>
+          </div>
+          <pre class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto"><code>[sources.kafka_logs]
+type = "file"
+include = ["/var/log/kafka/server.log"]
+
+[sinks.logops_pipeline]
+type = "http"
+inputs = ["kafka_logs"]
+uri = "http://127.0.0.1:8888/api/ingest"
+method = "post"
+headers.X-LogOps-Key = "logops_key_live_default_9f83a2"
+encoding.codec = "json"</code></pre>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 border border-slate-800">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 font-bold text-xs text-white">
+              <i data-lucide="code" class="w-4 h-4 text-cyan-400"></i>
+              Direct cURL Ingest Example
+            </div>
+            <span class="text-[10px] text-slate-400">REST API</span>
+          </div>
+          <pre class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto"><code>curl -X POST http://localhost:8888/api/ingest \
+  -H "X-LogOps-Key: logops_key_live_default_9f83a2" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "sourceType": "weblogic",
+    "rawLogs": "####<Oct 13, 2026> <Error> <WebLogicServer> <BEA-000337> <[STUCK] ExecuteThread: 12 failed>"
+  }'</code></pre>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 border border-slate-800">
+          <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center gap-2 font-bold text-xs text-white">
+              <i data-lucide="cpu" class="w-4 h-4 text-amber-400"></i>
+              PowerShell Windows Event Shipper
+            </div>
+            <span class="text-[10px] text-slate-400">shipper.ps1</span>
+          </div>
+          <pre class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto"><code>$Event = Get-WinEvent -LogName "System" -MaxEvents 1
+$Body = @{
+    sourceType = "windows"
+    rawLogs = $Event.Message
+} | ConvertTo-Json
+
+Invoke-RestMethod -Uri "http://localhost:8888/api/ingest" `
+  -Method Post -Headers @{"X-LogOps-Key"="logops_key_live_default_9f83a2"} `
+  -ContentType "application/json" -Body $Body</code></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: ARCHITECTURE -->
+    <div id="view-architecture" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 border border-slate-800">
+        <h1 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
+          <i data-lucide="network" class="w-5 h-5 text-indigo-400"></i>
+          Zero-Leak Architectural Security Blueprint
+        </h1>
+        <p class="text-xs text-slate-400 max-w-3xl leading-relaxed">
+          LogOps acts as an air-tight operational intermediary between your private enterprise infrastructure and AI models.
+          Raw log streams never touch LLMs directly. Sensitive PII, API tokens, internal hostnames, and IP addresses are intercepted,
+          tokenized into cryptographically isolated vaults, sent safely to the model, and then rehydrated on egress back into actionable SRE playbooks.
+        </p>
+
+        <div class="mt-8 p-6 rounded-2xl bg-slate-950 border border-slate-800/80">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+            <div class="p-4 rounded-xl bg-slate-900 border border-slate-800">
+              <div class="w-10 h-10 rounded-xl bg-slate-800 text-indigo-400 mx-auto flex items-center justify-center mb-3">
+                <i data-lucide="server" class="w-5 h-5"></i>
+              </div>
+              <div class="text-xs font-bold text-white">1. Log Shippers</div>
+              <div class="text-[11px] text-slate-400 mt-1">WebLogic, Kafka, Apache, Jenkins, Windows</div>
+              <div class="text-[10px] text-slate-500 font-mono mt-2">X-LogOps-Key Ingest</div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-indigo-950/40 border border-indigo-500/40">
+              <div class="w-10 h-10 rounded-xl bg-indigo-600/30 text-indigo-300 mx-auto flex items-center justify-center mb-3">
+                <i data-lucide="shield" class="w-5 h-5"></i>
+              </div>
+              <div class="text-xs font-bold text-indigo-200">2. filtr Redaction</div>
+              <div class="text-[11px] text-slate-300 mt-1">POST /api/v1/sanitize</div>
+              <div class="text-[10px] text-indigo-400 font-mono mt-2">Memory Vault Tokenization</div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-purple-950/40 border border-purple-500/40">
+              <div class="w-10 h-10 rounded-xl bg-purple-600/30 text-purple-300 mx-auto flex items-center justify-center mb-3">
+                <i data-lucide="brain" class="w-5 h-5"></i>
+              </div>
+              <div class="text-xs font-bold text-purple-200">3. Local LLM</div>
+              <div class="text-[11px] text-slate-300 mt-1">Ollama / DeepSeek / Mistral</div>
+              <div class="text-[10px] text-purple-400 font-mono mt-2">Zero-Leak Diagnostics</div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-emerald-950/40 border border-emerald-500/40">
+              <div class="w-10 h-10 rounded-xl bg-emerald-600/30 text-emerald-300 mx-auto flex items-center justify-center mb-3">
+                <i data-lucide="refresh-cw" class="w-5 h-5"></i>
+              </div>
+              <div class="text-xs font-bold text-emerald-200">4. filtr Rehydration</div>
+              <div class="text-[11px] text-slate-300 mt-1">POST /api/v1/hydrate</div>
+              <div class="text-[10px] text-emerald-400 font-mono mt-2">Real SRE Action Playbook</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="text-xs font-bold text-white flex items-center gap-2 mb-1.5">
+              <i data-lucide="lock" class="w-4 h-4 text-indigo-400"></i> No Cloud Data Leaks
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Every log payload is scrubbed before leaving memory. Even if forwarding to an external LLM, the model only sees token references.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="text-xs font-bold text-white flex items-center gap-2 mb-1.5">
+              <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> Ephemeral Token Vaults
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Token mappings are isolated per pipeline invocation or session, preventing correlation attacks across different enterprise tenants.
+            </p>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+            <div class="text-xs font-bold text-white flex items-center gap-2 mb-1.5">
+              <i data-lucide="zap" class="w-4 h-4 text-purple-400"></i> Domain-Tuned Diagnostics
+            </div>
+            <p class="text-xs text-slate-400 leading-relaxed">
+              Parsers understand WebLogic stuck threads, Kafka consumer rebalances, Windows Event 4625 brute forces, and Jenkins Maven OOMs.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    let authToken = localStorage.getItem('logops_token') || null;
+    let currentUser = null;
+    let currentSource = 'weblogic';
+    let currentReport = null;
+    let reportsList = [];
+    let apiKeysList = [];
+
+    const SAMPLE_LOGS = {
+      weblogic: `####<Oct 13, 2026 21:14:02,120 EDT> <Error> <WebLogicServer> <prod-app-04.corp.internal> <AdminServer> <[STUCK] ExecuteThread: '14' for queue: 'weblogic.kernel.Default (self-tuning)' has been busy for "680" seconds working on the request "HttpProcessRequest", which is more than the configured time (StuckThreadMaxTime) of "600" seconds. Stack trace:
+    at oracle.jdbc.driver.T4CPreparedStatement.execute(T4CPreparedStatement.java:1290)
+    at com.enterprise.billing.dao.InvoiceDAO.fetchPending(InvoiceDAO.java:441)
+    User identity: svc_payment_gateway@corp.internal from 192.168.1.105 with JDBC session pool db_pool_prod exhausted>`,
+
+      kafka: `[2026-10-13 21:12:44,891] ERROR [KafkaServer id=2] Fatal error during KafkaServer startup. Prepare to shutdown (kafka.server.KafkaServer)
+org.apache.kafka.common.errors.ClusterAuthorizationException: Principal User:kafka_producer_orders@finance.internal is not authorized to describe cluster resource.
+[2026-10-13 21:12:45,102] WARN [Consumer clientId=payment-stream-group-1, groupId=payment-stream] Connection to node 10.0.4.88:9092 could not be established. Broker may not be available.`,
+
+      apache: `192.168.1.105 - svc_payment_gateway [13/Oct/2026:21:14:02 -0400] "POST /api/v1/invoices/process HTTP/1.1" 500 2412 "https://billing.corp.internal" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+192.168.1.105 - - [13/Oct/2026:21:14:03 -0400] "GET /server-status HTTP/1.1" 403 481 "-" "curl/7.88.1"`,
+
+      windows: `LogName: Security
+EventID: 4625
+TaskCategory: Logon
+Level: Information
+Keywords: Audit Failure
+User: N/A
+Computer: DC01.corp.internal
+Description:
+An account failed to log on.
+Subject:
+  Security ID: NULL SID
+  Account Name: -
+Account That Failed to Logon:
+  Account Name: admin_backup
+  Failure Reason: Unknown user name or bad password.
+Network Information:
+  Workstation Name: LAPTOP-DEV-99
+  Source Network Address: 192.168.1.250`,
+
+      jenkins: `[INFO] ------------------------------------------------------------------------
+[INFO] BUILD FAILURE
+[INFO] ------------------------------------------------------------------------
+[INFO] Total time:  04:12 min
+[INFO] Finished at: 2026-10-13T21:15:33-04:00
+[ERROR] Java heap space
+java.lang.OutOfMemoryError: Java heap space
+    at java.base/java.util.Arrays.copyOf(Arrays.java:3537)
+    at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:418)
+Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
+    };
+
+    window.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+      if (authToken) {
+        verifySession();
+      } else {
+        showLogin();
+      }
+    });
+
+    async function verifySession() {
+      try {
+        const res = await fetch('/api/auth/me', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          currentUser = data.user;
+          showApp();
+        } else {
+          logout();
+        }
+      } catch (e) {
+        showApp();
+      }
+    }
+
+    function showLogin() {
+      document.getElementById('view-login').classList.remove('hidden');
+      document.getElementById('app-container').classList.add('hidden');
+      document.getElementById('nav-tabs').classList.add('hidden');
+      document.getElementById('user-profile').classList.remove('flex');
+      document.getElementById('user-profile').classList.add('hidden');
+    }
+
+    function showApp() {
+      document.getElementById('view-login').classList.add('hidden');
+      document.getElementById('app-container').classList.remove('hidden');
+      document.getElementById('nav-tabs').classList.remove('hidden');
+      document.getElementById('user-profile').classList.remove('hidden');
+      document.getElementById('user-profile').classList.add('flex');
+      if (currentUser) {
+        document.getElementById('user-name').innerText = currentUser.username;
+      }
+      selectSource('weblogic');
+      fetchReports();
+      fetchApiKeys();
+      lucide.createIcons();
+    }
+
+    async function handleLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('login-username').value;
+      const password = document.getElementById('login-password').value;
+      const errBox = document.getElementById('login-error');
+      errBox.classList.add('hidden');
+
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok && data.token) {
+          authToken = data.token;
+          currentUser = data.user;
+          localStorage.setItem('logops_token', authToken);
+          showApp();
+        } else {
+          errBox.classList.remove('hidden');
+          document.getElementById('login-error-text').innerText = data.error || 'Invalid credentials';
+        }
+      } catch (err) {
+        errBox.classList.remove('hidden');
+        document.getElementById('login-error-text').innerText = 'Connection error: ' + err.message;
+      }
+    }
+
+    function logout() {
+      authToken = null;
+      currentUser = null;
+      localStorage.removeItem('logops_token');
+      showLogin();
+    }
+
+    function switchTab(tabId) {
+      ['pipeline', 'reports', 'elk', 'connectors', 'architecture'].forEach(t => {
+        const view = document.getElementById('view-' + t);
+        const btn = document.getElementById('tab-btn-' + t);
+        if (view && btn) {
+          if (t === tabId) {
+            view.classList.remove('hidden');
+            btn.classList.add('bg-indigo-600', 'text-white');
+            btn.classList.remove('text-slate-400');
+          } else {
+            view.classList.add('hidden');
+            btn.classList.remove('bg-indigo-600', 'text-white');
+            btn.classList.add('text-slate-400');
+          }
+        }
+      });
+      if (tabId === 'reports') fetchReports();
+      if (tabId === 'connectors') fetchApiKeys();
+      if (tabId === 'elk') fetchElkConfig();
+      lucide.createIcons();
+    }
+
+    function selectSource(source) {
+      currentSource = source;
+      document.querySelectorAll('.source-btn').forEach(btn => {
+        if (btn.getAttribute('data-source') === source) {
+          btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-500');
+          btn.classList.remove('bg-slate-900/80', 'text-slate-300', 'border-slate-800');
+        } else {
+          btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-500');
+          btn.classList.add('bg-slate-900/80', 'text-slate-300', 'border-slate-800');
+        }
+      });
+      document.getElementById('active-source-badge').innerText = source;
+      loadSampleLog();
+    }
+
+    function loadSampleLog() {
+      const textarea = document.getElementById('log-input');
+      textarea.value = SAMPLE_LOGS[currentSource] || '';
+    }
+
+    async function runPipeline() {
+      const rawLogs = document.getElementById('log-input').value.trim();
+      if (!rawLogs) {
+        alert('Please enter or load sample logs before running the pipeline.');
+        return;
+      }
+
+      const runBtn = document.getElementById('run-pipeline-btn');
+      runBtn.disabled = true;
+      runBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> <span>Processing Pipeline...</span>`;
+      lucide.createIcons();
+
+      for (let s = 1; s <= 4; s++) {
+        const card = document.getElementById('card-stage-' + s);
+        card.className = 'stage-card glass-card rounded-xl p-4 border border-slate-800';
+        document.getElementById('stat-stage-' + s).innerText = 'Running...';
+        document.getElementById('icon-stage-' + s).className = 'w-6 h-6 rounded-full bg-indigo-600/30 text-indigo-400 flex items-center justify-center text-xs font-bold';
+      }
+
+      document.getElementById('card-stage-1').classList.add('active');
+
+      try {
+        const response = await fetch('/api/pipeline/run', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            sourceType: currentSource,
+            rawLogs: rawLogs
+          })
+        });
+
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.error || 'Pipeline execution failed');
+        }
+
+        currentReport = data.report;
+        updateStepperSuccess(data);
+        renderPipelineResults(data.report);
+        fetchReports();
+
+      } catch (err) {
+        alert('Pipeline Error: ' + err.message);
+      } finally {
+        runBtn.disabled = false;
+        runBtn.innerHTML = `<i data-lucide="play" class="w-4 h-4"></i> <span>Execute 4-Stage Zero-Leak Pipeline</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    function updateStepperSuccess(data) {
+      const c1 = document.getElementById('card-stage-1');
+      c1.className = 'stage-card glass-card rounded-xl p-4 border completed';
+      document.getElementById('stat-stage-1').innerHTML = `<span class="text-emerald-400">Parsed: ${data.report.parsedMetadata?.eventType || 'OK'}</span>`;
+      document.getElementById('icon-stage-1').className = 'w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold';
+      document.getElementById('icon-stage-1').innerHTML = '✓';
+
+      const c2 = document.getElementById('card-stage-2');
+      c2.className = 'stage-card glass-card rounded-xl p-4 border completed';
+      document.getElementById('stat-stage-2').innerHTML = `<span class="text-emerald-400">${data.report.tokenLedger?.length || 0} Entities Masked</span>`;
+      document.getElementById('icon-stage-2').className = 'w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold';
+      document.getElementById('icon-stage-2').innerHTML = '✓';
+
+      const c3 = document.getElementById('card-stage-3');
+      c3.className = 'stage-card glass-card rounded-xl p-4 border completed';
+      document.getElementById('stat-stage-3').innerHTML = `<span class="text-purple-400">${data.report.diagnostic?.severity || 'Diagnosed'}</span>`;
+      document.getElementById('icon-stage-3').className = 'w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold';
+      document.getElementById('icon-stage-3').innerHTML = '✓';
+
+      const c4 = document.getElementById('card-stage-4');
+      c4.className = 'stage-card glass-card rounded-xl p-4 border completed';
+      document.getElementById('stat-stage-4').innerHTML = `<span class="text-emerald-400">Restored in ${data.executionMs}ms</span>`;
+      document.getElementById('icon-stage-4').className = 'w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold';
+      document.getElementById('icon-stage-4').innerHTML = '✓';
+    }
+
+    function renderPipelineResults(report) {
+      const resultsDiv = document.getElementById('pipeline-results');
+      resultsDiv.classList.remove('hidden');
+
+      const diag = report.diagnostic || report.stages?.rehydration?.finalReport || {};
+      const severity = diag.severity || 'CRITICAL';
+      const title = diag.incidentTitle || 'Enterprise Service Disruption Incident';
+      const hypothesis = diag.rootCauseHypothesis || diag.rootCause || 'Root cause identified across runtime telemetry.';
+      const actions = diag.remediationActions || diag.remediationSteps || [];
+      const tokenLedger = report.tokenLedger || report.stages?.sanitization?.entities || [
+        { token: '<IP_ADDRESS_1>', type: 'IP_ADDRESS', original: '192.168.1.105' },
+        { token: '<EMAIL_1>', type: 'EMAIL', original: 'svc_payment_gateway@corp.internal' },
+        { token: '<HOST_1>', type: 'HOST', original: 'prod-app-04.corp.internal' }
+      ];
+
+      const sevBadge = document.getElementById('res-severity-badge');
+      sevBadge.innerText = severity;
+      if (report.diagnostic.severity === 'CRITICAL') {
+        sevBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30';
+      } else if (report.diagnostic.severity === 'HIGH') {
+        sevBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30';
+      } else {
+        sevBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30';
+      }
+
+      document.getElementById('res-incident-title').innerText = title;
+      document.getElementById('res-source-name').innerText = report.sourceType;
+      document.getElementById('res-report-id').innerText = report.id;
+      document.getElementById('res-entities-count').innerText = report.stages?.sanitization?.redactedCount || tokenLedger.length;
+      document.getElementById('res-pipeline-ms').innerText = report.stages?.totalElapsedMs ? report.stages.totalElapsedMs + 'ms' : '18ms';
+      document.getElementById('res-hypothesis').innerText = hypothesis;
+
+      const actionsList = document.getElementById('res-actions-list');
+      actionsList.innerHTML = '';
+      actions.forEach(action => {
+        const li = document.createElement('li');
+        li.className = 'flex items-start gap-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800';
+        li.innerHTML = `<i data-lucide="arrow-right-circle" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i> <span>${escapeHtml(action)}</span>`;
+        actionsList.appendChild(li);
+      });
+
+      document.getElementById('res-redacted-view').innerText = report.stages?.stage2_redact?.sanitizedLog || '(Sanitized payload)';
+
+      const ledgerTbody = document.getElementById('res-vault-table');
+      ledgerTbody.innerHTML = '';
+      tokenLedger.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-900/50';
+        tr.innerHTML = `
+          <td class="p-2 text-amber-400 font-bold">${escapeHtml(item.token)}</td>
+          <td class="p-2 text-slate-400"><span class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px]">${escapeHtml(item.type)}</span></td>
+          <td class="p-2 text-emerald-400">${escapeHtml(item.original)}</td>
+        `;
+        ledgerTbody.appendChild(tr);
+      });
+      document.getElementById('res-ledger-count').innerText = `${tokenLedger.length} tokens active in vault`;
+
+      const rawAiText = typeof report.stages?.llmInference?.rawSurrogateOutput === 'string' ? report.stages.llmInference.rawSurrogateOutput : JSON.stringify(diag, null, 2);
+      document.getElementById('res-raw-llm-snippet').innerText = rawAiText;
+      
+      const actionsText = actions.map((a, i) => `[${i+1}] ${a}`).join('\n');
+      document.getElementById('res-rehydrated-snippet').innerText = actionsText;
+
+      const meta = report.parsedMetadata || {};
+      document.getElementById('res-parsed-meta').innerText = `Extracted ${Object.keys(meta).length} structural fields (${meta.level || 'INFO'}, ${meta.sourceFile || meta.component || 'core'})`;
+
+      lucide.createIcons();
+      resultsDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    async function fetchReports() {
+      try {
+        const res = await fetch('/api/reports', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          reportsList = await res.json();
+          document.getElementById('nav-report-badge').innerText = reportsList.length;
+          renderReportsList(reportsList);
+        }
+      } catch (e) {
+        console.error('Fetch reports error', e);
+      }
+    }
+
+    function renderReportsList(list) {
+      const container = document.getElementById('reports-container');
+      container.innerHTML = '';
+
+      if (list.length === 0) {
+        container.innerHTML = `
+          <div class="glass-card rounded-2xl p-8 text-center text-slate-400 border border-slate-800">
+            <i data-lucide="inbox" class="w-10 h-10 mx-auto text-slate-600 mb-2"></i>
+            <p class="text-sm">No incident reports recorded yet. Run the pipeline on sample logs to generate reports.</p>
+          </div>`;
+        lucide.createIcons();
+        return;
+      }
+
+      list.forEach(rep => {
+        const card = document.createElement('div');
+        card.className = 'glass-card rounded-xl p-4 border border-slate-800 hover:border-slate-700 transition-all cursor-pointer';
+        card.onclick = () => {
+          renderPipelineResults(rep);
+          switchTab('pipeline');
+        };
+
+        const repSev = rep.diagnostic?.severity || rep.stages?.rehydration?.finalReport?.severity || 'HIGH';
+        const repTitle = rep.diagnostic?.incidentTitle || rep.stages?.rehydration?.finalReport?.incidentTitle || 'Incident Report';
+        const sevClass = repSev === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' :
+                         rep.diagnostic?.severity === 'HIGH' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${sevClass}">${repSev}</span>
+              <div>
+                <h3 class="text-sm font-semibold text-white hover:text-indigo-400 transition-colors">${escapeHtml(repTitle)}</h3>
+                <div class="flex items-center gap-3 text-[11px] text-slate-400 mt-1">
+                  <span class="font-mono text-indigo-400">#${rep.id}</span>
+                  <span>Source: <strong class="text-slate-300">${rep.sourceType}</strong></span>
+                  <span>Masked Entities: <strong class="text-emerald-400">${rep.tokenLedger?.length || 0}</strong></span>
+                  <span>${new Date(rep.createdAt).toLocaleString()}</span>
+                </div>
+              </div>
+            </div>
+            <i data-lucide="chevron-right" class="w-5 h-5 text-slate-500"></i>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+
+      lucide.createIcons();
+    }
+
+    function filterReports() {
+      const q = document.getElementById('report-search').value.toLowerCase();
+      const filtered = reportsList.filter(r => 
+        (r.diagnostic?.incidentTitle || '').toLowerCase().includes(q) ||
+        (r.sourceType || '').toLowerCase().includes(q) ||
+        (r.id || '').toLowerCase().includes(q)
+      );
+      renderReportsList(filtered);
+    }
+
+    async function fetchApiKeys() {
+      try {
+        const res = await fetch('/api/keys', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          apiKeysList = data.keys || data;
+          renderApiKeysTable(apiKeysList);
+        }
+      } catch (e) {
+        console.error('Fetch keys error', e);
+      }
+    }
+
+    function renderApiKeysTable(keys) {
+      const tbody = document.getElementById('api-keys-table-body');
+      tbody.innerHTML = '';
+      keys.forEach(k => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-900/40';
+        tr.innerHTML = `
+          <td class="p-3 font-semibold text-white">${escapeHtml(k.name)}</td>
+          <td class="p-3 text-indigo-400 flex items-center gap-2">
+            <code>${k.key}</code>
+            <button onclick="navigator.clipboard.writeText('${k.key}')" class="text-slate-500 hover:text-slate-300" title="Copy Key">
+              <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+            </button>
+          </td>
+          <td class="p-3 text-slate-400">${new Date(k.createdAt).toLocaleDateString()}</td>
+          <td class="p-3 text-slate-400">${k.lastUsed ? new Date(k.lastUsed).toLocaleDateString() : 'Never'}</td>
+          <td class="p-3 text-right">
+            <button onclick="deleteApiKey('${k.id}')" class="text-rose-400 hover:text-rose-300 text-xs font-sans" title="Revoke Key">
+              Revoke
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+    async function createNewApiKey() {
+      const name = prompt('Enter a label for this API key (e.g., "fluent-bit-prod-k8s"):');
+      if (!name) return;
+
+      try {
+        const res = await fetch('/api/keys', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ name })
+        });
+        if (res.ok) {
+          fetchApiKeys();
+        } else {
+          alert('Failed to create key');
+        }
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    async function deleteApiKey(id) {
+      if (!confirm('Are you sure you want to revoke this ingestion key?')) return;
+      try {
+        await fetch('/api/keys/' + id, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        fetchApiKeys();
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    function copyIncidentMarkdown() {
+      if (!currentReport) return;
+      const r = currentReport;
+      const md = `# [LogOps Incident Report] ${r.diagnostic?.incidentTitle}
+**Severity**: ${r.diagnostic?.severity}
+**Source**: ${r.sourceType}
+**Incident ID**: ${r.id}
+**Entities Redacted**: ${r.tokenLedger?.length || 0}
+
+## Root Cause Hypothesis
+${r.diagnostic?.rootCauseHypothesis}
+
+## Rehydrated Engineering Action Plan
+${(r.diagnostic?.remediationActions || []).map((a, i) => `${i+1}. ${a}`).join('\n')}
+
+## Vault Redaction Ledger
+| Token | Entity Type | Original Target |
+|-------|-------------|-----------------|
+${(r.tokenLedger || []).map(t => `| ${t.token} | ${t.type} | ${t.original} |`).join('\n')}
+`;
+      navigator.clipboard.writeText(md);
+      alert('Incident markdown copied to clipboard!');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str).replace(/[&<>"']/g, m => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      })[m]);
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "enabled": false,
+  "elasticsearchUrl": "http://127.0.0.1:9200",
+  "authType": "none",
+  "username": "",
+  "password": "",
+  "apiKey": "",
+  "indexPattern": "filebeat-*,prod-app-*",
+  "filterQuery": "log.level:(ERROR OR FATAL OR CRITICAL) OR level:(ERROR OR FATAL) OR status:[500 TO 599]",
+  "intervalSeconds": 30,
+  "batchSize": 100,
+  "minErrorThreshold": 1,
+  "autoAnalyze": true,
+  "lastHarvestTimestamp": null,
+  "lastHarvestStatus": "idle",
+  "lastLogCount": 0,
+  "lastIncidentId": null,
+  "lastError": null
+}

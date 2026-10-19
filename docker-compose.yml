@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # 1. LogOps Master Control Plane & SRE Dashboard
+  logops:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ${LOGOPS_IMAGE:-ghcr.io/kisa-ops/logops:latest}
+    container_name: logops-platform
+    restart: unless-stopped
+    ports:
+      - "${LOGOPS_PORT:-8888}:8888"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      - PORT=8888
+      - NODE_ENV=production
+      - FILTR_URL=${FILTR_URL:-http://host.docker.internal:8080}
+      - LLM_URL=${LLM_URL:-http://host.docker.internal:11434}
+      - LLM_MODEL=${LLM_MODEL:-deepseek-r1:8b}
+    volumes:
+      - logops-data:/app/server/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:8888/api/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  logops-data:
+    name: logops-data

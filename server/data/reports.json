@@ -1,0 +1,275 @@
+[
+  {
+    "id": "rep_1792160855779_d8dbeb8a",
+    "createdAt": "2026-10-16T14:27:35.779Z",
+    "durationMs": 21,
+    "sourceType": "elk",
+    "rawLogLines": 6,
+    "filtrEngineStatus": "native_engine",
+    "llmEngineStatus": "intelligence_simulator",
+    "stages": {
+      "ingest": {
+        "totalLines": 6,
+        "errors": 4,
+        "warnings": 0,
+        "info": 2,
+        "sampleEvents": [
+          {
+            "source": "elk",
+            "type": "summary",
+            "timestamp": "2026-10-16T14:27:35.758Z",
+            "level": "INFO",
+            "message": "=== LOGSTASH / FORWARDED BATCH INGEST ==="
+          },
+          {
+            "source": "elk",
+            "type": "event",
+            "timestamp": "2026-10-16T14:27:35.758Z",
+            "level": "INFO",
+            "message": "Batch Size: 4 | Clusters: 2"
+          },
+          {
+            "source": "elk",
+            "type": "cluster",
+            "timestamp": "2026-10-16T14:27:35.758Z",
+            "level": "ERROR",
+            "message": "--- [CLUSTER] (Occurrences: 3) Level: ERROR Service: enterprise-app ---"
+          },
+          {
+            "source": "elk",
+            "type": "event",
+            "timestamp": "2026-10-16T14:27:35.758Z",
+            "level": "ERROR",
+            "message": "Sample: java.lang.NullPointerException: Checkout order 10482 failed for user 10.0.4.15"
+          },
+          {
+            "source": "elk",
+            "type": "cluster",
+            "timestamp": "2026-10-16T14:27:35.758Z",
+            "level": "ERROR",
+            "message": "--- [CLUSTER] (Occurrences: 1) Level: FATAL Service: enterprise-app ---"
+          },
+          {
+            "source": "elk",
+            "type": "event",
+            "timestamp": "2026-10-16T14:27:35.758Z",
+            "level": "ERROR",
+            "message": "Sample: Database pool exhausted: failed to get connection to postgres://db_admin:SecretPass123@10.0.5.2:5432/orders"
+          }
+        ]
+      },
+      "sanitization": {
+        "sessionId": "vault_f542a28902353033",
+        "redactedCount": 2,
+        "byCategory": {
+          "credentials": 0,
+          "network": 2,
+          "pii": 0,
+          "cloud": 0
+        },
+        "sanitizedPreview": "=== LOGSTASH / FORWARDED BATCH INGEST ===\nBatch Size: 4 | Clusters: 2\n\n--- [CLUSTER] (Occurrences: 3) Level: ERROR Service: enterprise-app ---\nSample: java.lang.NullPointerException: Checkout order 10482 failed for user 10.0.4.15\n\n--- [CLUSTER] (Occurrences: 1) Level: FATAL Service: enterprise-app ---\nSample: Database pool exhausted: failed to get connection to postgres://db_admin:SecretPass123@10.0.5.2:5432/orders\n\n"
+      },
+      "llmInference": {
+        "model": "deepseek-r1",
+        "promptLength": 420,
+        "rawSurrogateOutput": "{\n  \"incidentTitle\": \"Apache HTTPD Reverse Proxy Upstream 502/504 Gateway Timeout\",\n  \"severity\": \"HIGH\",\n  \"rootCause\": \"Apache mod_proxy failed to establish socket connection to upstream application server (AH00898: Error reading from remote server). MaxRequestWorkers threshold was reached.\",\n  \"affectedComponents\": [\n    \"Apache mod_proxy_http\",\n    \"mod_mpm_event\",\n    \"Upstream Port: 8080\"\n  ],\n  \"remediationSteps\": [\n    \"Increase ProxyTimeout from 60 to 120 seconds in httpd.conf.\",\n    \"Increase ServerLimit and MaxRequestWorkers in mpm_event.conf: MaxRequestWorkers 800.\",\n    \"Inspect upstream application server health and GC pause durations.\",\n    \"Gracefully reload Apache server: apachectl -k graceful.\"\n  ],\n  \"anomalyTimeline\": [\n    {\n      \"timestamp\": \"2026-10-16T14:27:35.758Z\",\n      \"event\": \"=== LOGSTASH / FORWARDED BATCH INGEST ===\"\n    },\n    {\n      \"timestamp\": \"2026-10-16T14:27:35.758Z\",\n      \"event\": \"Batch Size: 4 | Clusters: 2\"\n    },\n    {\n      \"timestamp\": \"2026-10-16T14:27:35.758Z\",\n      \"event\": \"--- [CLUSTER] (Occurrences: 3) Level: ERROR Service: enterprise-app ---\"\n    },\n    {\n      \"timestamp\": \"2026-10-16T14:27:35.758Z\",\n      \"event\": \"Sample: java.lang.NullPointerException: Checkout order 10482 failed for user 10.0.4.15\"\n    },\n    {\n      \"timestamp\": \"2026-10-16T14:27:35.758Z\",\n      \"event\": \"--- [CLUSTER] (Occurrences: 1) Level: FATAL Service: enterprise-app ---\"\n    },\n    {\n      \"timestamp\": \"2026-10-16T14:27:35.758Z\",\n      \"event\": \"Sample: Database pool exhausted: failed to get connection to postgres://db_admin:SecretPass123@10.0.5.2:5432/orders\"\n    }\n  ]\n}"
+      },
+      "rehydration": {
+        "tokensRestored": 0,
+        "finalReport": {
+          "incidentTitle": "Apache HTTPD Reverse Proxy Upstream 502/504 Gateway Timeout",
+          "severity": "HIGH",
+          "rootCause": "Apache mod_proxy failed to establish socket connection to upstream application server (AH00898: Error reading from remote server). MaxRequestWorkers threshold was reached.",
+          "affectedComponents": [
+            "Apache mod_proxy_http",
+            "mod_mpm_event",
+            "Upstream Port: 8080"
+          ],
+          "remediationSteps": [
+            "Increase ProxyTimeout from 60 to 120 seconds in httpd.conf.",
+            "Increase ServerLimit and MaxRequestWorkers in mpm_event.conf: MaxRequestWorkers 800.",
+            "Inspect upstream application server health and GC pause durations.",
+            "Gracefully reload Apache server: apachectl -k graceful."
+          ],
+          "anomalyTimeline": [
+            {
+              "timestamp": "2026-10-16T14:27:35.758Z",
+              "event": "=== LOGSTASH / FORWARDED BATCH INGEST ==="
+            },
+            {
+              "timestamp": "2026-10-16T14:27:35.758Z",
+              "event": "Batch Size: 4 | Clusters: 2"
+            },
+            {
+              "timestamp": "2026-10-16T14:27:35.758Z",
+              "event": "--- [CLUSTER] (Occurrences: 3) Level: ERROR Service: enterprise-app ---"
+            },
+            {
+              "timestamp": "2026-10-16T14:27:35.758Z",
+              "event": "Sample: java.lang.NullPointerException: Checkout order 10482 failed for user 10.0.4.15"
+            },
+            {
+              "timestamp": "2026-10-16T14:27:35.758Z",
+              "event": "--- [CLUSTER] (Occurrences: 1) Level: FATAL Service: enterprise-app ---"
+            },
+            {
+              "timestamp": "2026-10-16T14:27:35.758Z",
+              "event": "Sample: Database pool exhausted: failed to get connection to postgres://db_admin:SecretPass123@10.0.5.2:5432/orders"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "rep_1791917870355_10fb3238",
+    "createdAt": "2026-10-13T18:57:50.355Z",
+    "durationMs": 109,
+    "sourceType": "kafka",
+    "rawLogLines": 3,
+    "filtrEngineStatus": "live_container",
+    "llmEngineStatus": "intelligence_simulator",
+    "stages": {
+      "ingest": {
+        "totalLines": 3,
+        "errors": 1,
+        "warnings": 1,
+        "info": 1,
+        "sampleEvents": [
+          {
+            "source": "kafka",
+            "timestamp": "2026-10-13 21:12:44,891",
+            "level": "ERROR",
+            "component": "KafkaServer id=2",
+            "message": "Fatal error during KafkaServer startup. Prepare to shutdown (kafka.server.KafkaServer)"
+          },
+          {
+            "source": "kafka",
+            "timestamp": "2026-10-13T18:57:50.247Z",
+            "level": "INFO",
+            "message": "org.apache.kafka.common.errors.ClusterAuthorizationException: Principal User:kafka_producer_orders@finance.internal is not authorized to describe cluster resource."
+          },
+          {
+            "source": "kafka",
+            "timestamp": "2026-10-13 21:12:45,102",
+            "level": "WARN",
+            "component": "Consumer clientId=payment-stream-group-1, groupId=payment-stream",
+            "message": "Connection to node 10.0.4.88:9092 could not be established. Broker may not be available."
+          }
+        ]
+      },
+      "sanitization": {
+        "sessionId": "5fade3b9-9e8c-4ff3-83de-67f64cc059fc",
+        "redactedCount": 2,
+        "byCategory": {
+          "devops": 1,
+          "network": 1
+        },
+        "sanitizedPreview": "[2026-10-13 21:12:44,891] ERROR [KafkaServer id=2] Fatal error during KafkaServer startup. Prepare to shutdown (kafka.server.KafkaServer)\norg.apache.kafka.common.errors.ClusterAuthorizationException: Principal User:kafka_producer_orders@finance.internal is not authorized to describe cluster resource.\n[2026-10-13 21:12:45,102] WARN [Consumer clientId=payment-stream-group-1, groupId=payment-stream] Connection to node 10.0.4.88:9092 could not be established. Broker may not be available."
+      },
+      "llmInference": {
+        "model": "deepseek-r1",
+        "promptLength": 488,
+        "rawSurrogateOutput": "{\n  \"incidentTitle\": \"Kafka Broker Leader Partition Loss & Rebalance Storm\",\n  \"severity\": \"HIGH\",\n  \"rootCause\": \"Broker heartbeat timed out (session.timeout.ms=10000). ZooKeeper / KRaft metadata lost quorum synchronization, causing partition replica out-of-sync (ISR shrinkage) and consumer group rebalance loops.\",\n  \"affectedComponents\": [\n    \"Kafka Broker Cluster\",\n    \"KRaft Metadata Quorum\",\n    \"Consumer Group: telemetry-consumers\"\n  ],\n  \"remediationSteps\": [\n    \"Inspect broker disk I/O and JVM GC pauses: tail -n 100 kafka-server-gc.log.\",\n    \"Increase max.poll.interval.ms from 300000 to 600000 to prevent premature consumer ejection.\",\n    \"Verify topic partition ISR status: kafka-topics.sh --describe --under-replicated-partitions.\",\n    \"Trigger controlled leader re-election: kafka-leader-election.sh --election-type preferred.\"\n  ],\n  \"anomalyTimeline\": [\n    {\n      \"timestamp\": \"2026-10-13 21:12:44,891\",\n      \"event\": \"Fatal error during KafkaServer startup. Prepare to shutdown (kafka.server.KafkaServer)\"\n    },\n    {\n      \"timestamp\": \"2026-10-13T18:57:50.247Z\",\n      \"event\": \"org.apache.kafka.common.errors.ClusterAuthorizationException: Principal User:kafka_producer_orders@finance.internal is not authorized to describe cluster resource.\"\n    },\n    {\n      \"timestamp\": \"2026-10-13 21:12:45,102\",\n      \"event\": \"Connection to node 10.0.4.88:9092 could not be established. Broker may not be available.\"\n    }\n  ]\n}"
+      },
+      "rehydration": {
+        "tokensRestored": 0,
+        "finalReport": {
+          "incidentTitle": "Kafka Broker Leader Partition Loss & Rebalance Storm",
+          "severity": "HIGH",
+          "rootCause": "Broker heartbeat timed out (session.timeout.ms=10000). ZooKeeper / KRaft metadata lost quorum synchronization, causing partition replica out-of-sync (ISR shrinkage) and consumer group rebalance loops.",
+          "affectedComponents": [
+            "Kafka Broker Cluster",
+            "KRaft Metadata Quorum",
+            "Consumer Group: telemetry-consumers"
+          ],
+          "remediationSteps": [
+            "Inspect broker disk I/O and JVM GC pauses: tail -n 100 kafka-server-gc.log.",
+            "Increase max.poll.interval.ms from 300000 to 600000 to prevent premature consumer ejection.",
+            "Verify topic partition ISR status: kafka-topics.sh --describe --under-replicated-partitions.",
+            "Trigger controlled leader re-election: kafka-leader-election.sh --election-type preferred."
+          ],
+          "anomalyTimeline": [
+            {
+              "timestamp": "2026-10-13 21:12:44,891",
+              "event": "Fatal error during KafkaServer startup. Prepare to shutdown (kafka.server.KafkaServer)"
+            },
+            {
+              "timestamp": "2026-10-13T18:57:50.247Z",
+              "event": "org.apache.kafka.common.errors.ClusterAuthorizationException: Principal User:kafka_producer_orders@finance.internal is not authorized to describe cluster resource."
+            },
+            {
+              "timestamp": "2026-10-13 21:12:45,102",
+              "event": "Connection to node 10.0.4.88:9092 could not be established. Broker may not be available."
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
+    "id": "rep_1791917731845_c79153ff",
+    "createdAt": "2026-10-13T18:55:31.845Z",
+    "durationMs": 358,
+    "sourceType": "weblogic",
+    "rawLogLines": 1,
+    "filtrEngineStatus": "live_container",
+    "llmEngineStatus": "intelligence_simulator",
+    "stages": {
+      "ingest": {
+        "totalLines": 1,
+        "errors": 0,
+        "warnings": 0,
+        "info": 1,
+        "sampleEvents": [
+          {
+            "source": "weblogic",
+            "timestamp": "2026-10-13T18:55:31.488Z",
+            "level": "INFO",
+            "message": "####<Oct 13, 2026 21:14:02,120 EDT> <Error> <WebLogicServer> <prod-app-04.corp.internal> <AdminServer> <[STUCK] ExecuteThread: '14' for queue: 'weblogic.kernel.Default (self-tuning)' has been busy for \"680\" seconds working on the request \"HttpProcessRequest\", which is more than the configured time (StuckThreadMaxTime) of \"600\" seconds. Stack trace:\n    at oracle.jdbc.driver.T4CPreparedStatement.execute(T4CPreparedStatement.java:1290)\n    at com.enterprise.billing.dao.InvoiceDAO.fetchPending(InvoiceDAO.java:441)\n    User identity: svc_payment_gateway@corp.internal from 192.168.1.105 with JDBC session pool db_pool_prod exhausted>"
+          }
+        ]
+      },
+      "sanitization": {
+        "sessionId": "f360d485-19d7-43c9-8560-f85828ee39ad",
+        "redactedCount": 5,
+        "byCategory": {
+          "network": 2,
+          "devops": 2,
+          "pii": 1
+        },
+        "sanitizedPreview": "####<Oct 13, 2026 21:14:02,120 EDT> <Error> <WebLogicServer> <prod-app-04.corp.internal> <AdminServer> <[STUCK] ExecuteThread: '14' for queue: 'weblogic.kernel.Default (self-tuning)' has been busy for \"680\" seconds working on the request \"HttpProcessRequest\", which is more than the configured time (StuckThreadMaxTime) of \"600\" seconds. Stack trace:\n    at oracle.jdbc.driver.T4CPreparedStatement.execute(T4CPreparedStatement.java:1290)\n    at com.enterprise.billing.dao.InvoiceDAO.fetchPending(InvoiceDAO.java:441)\n    User identity: svc_payment_gateway@corp.internal from 192.168.1.105 with JDBC session pool db_pool_prod exhausted>"
+      },
+      "llmInference": {
+        "model": "deepseek-r1",
+        "promptLength": 635,
+        "rawSurrogateOutput": "{\n  \"incidentTitle\": \"WebLogic Server Thread Deadlock & DataSource Pool Exhaustion\",\n  \"severity\": \"CRITICAL\",\n  \"rootCause\": \"WebLogic Server execute threads entered STUCK state (BEA-000337) waiting for response from backend database pool. Connection pool reached MaxCapacity (100) and timed out after 30000ms.\",\n  \"affectedComponents\": [\n    \"WebLogic Kernel Default Queue\",\n    \"JDBC ConnectionPool: oraDS\",\n    \"ActiveTransactions\"\n  ],\n  \"remediationSteps\": [\n    \"Increase JDBC Connection Pool max capacity: configure MaxCapacity=150 in weblogic-ra.xml.\",\n    \"Investigate long-running uncommitted SQL queries blocking thread workers via WLST: threadDump().\",\n    \"Tune StuckThreadMaxTime from 600s to 300s to enable early alert signaling.\",\n    \"Execute graceful server restart: ./stopWebLogic.sh && ./startWebLogic.sh.\"\n  ],\n  \"anomalyTimeline\": [\n    {\n      \"timestamp\": \"2026-10-13T18:55:31.488Z\",\n      \"event\": \"####<Oct 13, 2026 21:14:02,120 EDT> <Error> <WebLogicServer> <prod-app-04.corp.internal> <AdminServer> <[STUCK] ExecuteThread: '14' for queue: 'weblogic.kernel.Default (self-tuning)' has been busy for \\\"680\\\" seconds working on the request \\\"HttpProcessRequest\\\", which is more than the configured time (StuckThreadMaxTime) of \\\"600\\\" seconds. Stack trace:\\n    at oracle.jdbc.driver.T4CPreparedStatement.execute(T4CPreparedStatement.java:1290)\\n    at com.enterprise.billing.dao.InvoiceDAO.fetchPending(InvoiceDAO.java:441)\\n    User identity: svc_payment_gateway@corp.internal from 192.168.1.105 with JDBC session pool db_pool_prod exhausted>\"\n    }\n  ]\n}"
+      },
+      "rehydration": {
+        "tokensRestored": 0,
+        "finalReport": {
+          "incidentTitle": "WebLogic Server Thread Deadlock & DataSource Pool Exhaustion",
+          "severity": "CRITICAL",
+          "rootCause": "WebLogic Server execute threads entered STUCK state (BEA-000337) waiting for response from backend database pool. Connection pool reached MaxCapacity (100) and timed out after 30000ms.",
+          "affectedComponents": [
+            "WebLogic Kernel Default Queue",
+            "JDBC ConnectionPool: oraDS",
+            "ActiveTransactions"
+          ],
+          "remediationSteps": [
+            "Increase JDBC Connection Pool max capacity: configure MaxCapacity=150 in weblogic-ra.xml.",
+            "Investigate long-running uncommitted SQL queries blocking thread workers via WLST: threadDump().",
+            "Tune StuckThreadMaxTime from 600s to 300s to enable early alert signaling.",
+            "Execute graceful server restart: ./stopWebLogic.sh && ./startWebLogic.sh."
+          ],
+          "anomalyTimeline": [
+            {
+              "timestamp": "2026-10-13T18:55:31.488Z",
+              "event": "####<Oct 13, 2026 21:14:02,120 EDT> <Error> <WebLogicServer> <prod-app-04.corp.internal> <AdminServer> <[STUCK] ExecuteThread: '14' for queue: 'weblogic.kernel.Default (self-tuning)' has been busy for \"680\" seconds working on the request \"HttpProcessRequest\", which is more than the configured time (StuckThreadMaxTime) of \"600\" seconds. Stack trace:\n    at oracle.jdbc.driver.T4CPreparedStatement.execute(T4CPreparedStatement.java:1290)\n    at com.enterprise.billing.dao.InvoiceDAO.fetchPending(InvoiceDAO.java:441)\n    User identity: svc_payment_gateway@corp.internal from 192.168.1.105 with JDBC session pool db_pool_prod exhausted>"
+            }
+          ]
+        }
+      }
+    }
+  }
+]
