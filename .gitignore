@@ -4,3 +4,4 @@ node_modules/
 server/server.log
 .DS_Store
 logops-docker-*.tar.gz*
+!sample_logs/**/*.log

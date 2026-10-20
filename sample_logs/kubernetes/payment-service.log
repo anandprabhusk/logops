@@ -1,0 +1,3 @@
+2026-10-20T14:35:10.120Z kubelet node-worker-pool-3 Pod payment-processing-service-7f89d4-x9z12 container checkout-worker terminated with exit code 137 (OOMKilled)
+2026-10-20T14:35:11.450Z kubelet node-worker-pool-3 Readiness probe failed: HTTP probe failed with statuscode: 503 for pod payment-processing-service-7f89d4-x9z12 (10.244.3.44:8080)
+2026-10-20T14:35:15.002Z k8s-apiserver [audit] user="system:serviceaccount:prod:ingress-controller" ip="10.244.0.1" token="Bearer secret_sa_token_999" code=403

@@ -9,6 +9,7 @@ const fs = require('fs');
 const crypto = require('crypto');
 const { executeLogPipeline } = require('./orchestrator');
 const elkConnector = require('./elkConnector');
+const fileHarvester = require('./fileHarvester');
 
 const PORT = parseInt(process.env.PORT || process.env.LOGOPS_PORT || '8888', 10);
 const HOST = process.env.HOST || '0.0.0.0';
@@ -50,7 +51,7 @@ if (users.length === 0) {
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.pbkdf2Sync('LogOps2026!', salt, 100000, 64, 'sha512').toString('hex');
   users = [{
-    id: 'user_admin',
+    id: 'usr_admin',
     username: 'admin',
     salt,
     hash,
@@ -77,6 +78,13 @@ let reports = readJsonFile(REPORTS_FILE, []);
 
 // Initialize ELK Community Edition Connector & Auto-Harvester
 elkConnector.init(DATA_DIR, executeLogPipeline, (report) => {
+  reports.unshift(report);
+  if (reports.length > 100) reports = reports.slice(0, 100);
+  writeJsonFile(REPORTS_FILE, reports);
+});
+
+// Initialize Server File & Folder Harvester
+fileHarvester.init(DATA_DIR, executeLogPipeline, (report) => {
   reports.unshift(report);
   if (reports.length > 100) reports = reports.slice(0, 100);
   writeJsonFile(REPORTS_FILE, reports);
@@ -333,7 +341,8 @@ const server = http.createServer(async (req, res) => {
       stats: {
         totalReports: reports.length,
         totalKeys: apiKeys.length,
-        activeSessions: activeSessions.size
+        activeSessions: activeSessions.size,
+        activeWatchers: fileHarvester.getWatchers().filter(w => w.enabled).length
       }
     });
   }
@@ -447,6 +456,120 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
+  // ---------------------------------------------------------------------------
+  // Server Path & File Harvester Routes
+  // ---------------------------------------------------------------------------
+  if (pathname === '/api/harvester/browse' && method === 'POST') {
+    const auth = authenticateRequest(req);
+    if (!auth.authorized) return sendJson(res, 401, { error: 'Unauthorized' });
+    const body = await parseJsonBody(req);
+    try {
+      const browseResult = fileHarvester.browse(body.path, body.pattern);
+      return sendJson(res, 200, { success: true, ...browseResult });
+    } catch (err) {
+      return sendJson(res, 400, { success: false, error: err.message });
+    }
+  }
+
+  if (pathname === '/api/harvester/preview' && method === 'POST') {
+    const auth = authenticateRequest(req);
+    if (!auth.authorized) return sendJson(res, 401, { error: 'Unauthorized' });
+    const body = await parseJsonBody(req);
+    try {
+      const prevResult = fileHarvester.preview(body.filePath, body.tailLines);
+      return sendJson(res, 200, { success: true, ...prevResult });
+    } catch (err) {
+      return sendJson(res, 400, { success: false, error: err.message });
+    }
+  }
+
+  if (pathname === '/api/harvester/ingest' && method === 'POST') {
+    const auth = authenticateRequest(req);
+    if (!auth.authorized) return sendJson(res, 401, { error: 'Unauthorized' });
+    const body = await parseJsonBody(req);
+    const targetPath = body.path || './sample_logs/apache';
+    const pattern = body.pattern || '*.log';
+    const tailLines = parseInt(body.tailLines || '100', 10);
+    const sourceType = body.sourceType || 'apache';
+    const filterErrors = body.filterErrors === true;
+
+    try {
+      const harvested = fileHarvester.readLogs(targetPath, { pattern, tailLines, filterErrors });
+      if (!harvested.rawLogs.trim()) {
+        return sendJson(res, 400, { success: false, error: 'Harvested log stream was empty.' });
+      }
+
+      // Execute 4-stage Zero-Leak pipeline
+      const report = await executeLogPipeline({
+        sourceType,
+        rawLogs: harvested.rawLogs,
+        filtrUrl: body.filtrUrl || process.env.FILTR_URL || 'http://127.0.0.1:8080',
+        llmUrl: body.llmUrl || process.env.LLM_URL || 'http://127.0.0.1:11434',
+        llmModel: body.llmModel || process.env.LLM_MODEL || 'deepseek-r1'
+      });
+
+      // Annotate report with harvested server path metadata
+      report.harvestSource = {
+        type: 'server_path',
+        path: harvested.path,
+        filesProcessed: harvested.filesProcessed,
+        totalHarvestedLines: harvested.totalLines
+      };
+
+      reports.unshift(report);
+      if (reports.length > 100) reports = reports.slice(0, 100);
+      writeJsonFile(REPORTS_FILE, reports);
+
+      return sendJson(res, 200, {
+        success: true,
+        harvestSource: report.harvestSource,
+        report
+      });
+    } catch (err) {
+      return sendJson(res, 500, { success: false, error: err.message });
+    }
+  }
+
+  if (pathname === '/api/harvester/watchers' && method === 'GET') {
+    const auth = authenticateRequest(req);
+    if (!auth.authorized) return sendJson(res, 401, { error: 'Unauthorized' });
+    return sendJson(res, 200, { success: true, watchers: fileHarvester.getWatchers() });
+  }
+
+  if (pathname === '/api/harvester/watchers' && method === 'POST') {
+    const auth = authenticateRequest(req);
+    if (!auth.authorized) return sendJson(res, 401, { error: 'Unauthorized' });
+    const body = await parseJsonBody(req);
+    try {
+      const watcher = fileHarvester.createWatcher(body);
+      return sendJson(res, 201, { success: true, watcher });
+    } catch (err) {
+      return sendJson(res, 400, { success: false, error: err.message });
+    }
+  }
+
+  if (pathname.startsWith('/api/harvester/watchers/') && pathname.endsWith('/toggle') && method === 'POST') {
+    const auth = authenticateRequest(req);
+    if (!auth.authorized) return sendJson(res, 401, { error: 'Unauthorized' });
+    const id = pathname.replace('/api/harvester/watchers/', '').replace('/toggle', '');
+    const w = fileHarvester.watchers.get(id);
+    if (!w) return sendJson(res, 404, { error: 'Watcher not found' });
+    if (w.enabled) {
+      fileHarvester.stopWatcher(id);
+    } else {
+      fileHarvester.startWatcher(id);
+    }
+    return sendJson(res, 200, { success: true, enabled: w.enabled });
+  }
+
+  if (pathname.startsWith('/api/harvester/watchers/') && method === 'DELETE') {
+    const auth = authenticateRequest(req);
+    if (!auth.authorized) return sendJson(res, 401, { error: 'Unauthorized' });
+    const id = pathname.replace('/api/harvester/watchers/', '');
+    fileHarvester.deleteWatcher(id);
+    return sendJson(res, 200, { success: true, deletedId: id });
+  }
+
   // 8. Incident Reports History & Export
   if (pathname === '/api/reports' && method === 'GET') {
     const auth = authenticateRequest(req);
@@ -466,11 +589,13 @@ const server = http.createServer(async (req, res) => {
 
       const diag = report.diagnostic || {};
       const actions = (diag.remediationSteps || diag.remediationActions || []).map((a, i) => `${i + 1}. ${a}`).join('\n');
+      const harvestInfo = report.harvestSource ? `**Harvested Server Path**: \`${report.harvestSource.path}\` (${report.harvestSource.filesProcessed.map(f => f.file).join(', ')})\n` : '';
       const md = `# [INCIDENT REPORT] ${diag.incidentTitle || 'Enterprise Incident'}\n\n` +
         `**Severity**: ${diag.severity || 'CRITICAL'}\n` +
         `**Source System**: ${report.sourceType}\n` +
         `**Incident ID**: ${report.id}\n` +
         `**Generated At**: ${report.createdAt}\n` +
+        harvestInfo +
         `**Entities Masked & Rehydrated**: ${report.stages?.sanitization?.redactedCount || (report.tokenLedger || []).length}\n\n` +
         `## 🔍 Root Cause Hypothesis\n${diag.rootCause || diag.rootCauseHypothesis || 'N/A'}\n\n` +
         `## 🛠️ Actionable SRE Remediation Playbook\n${actions}\n\n` +
@@ -596,5 +721,6 @@ server.listen(PORT, HOST, () => {
   console.log(`  Listening on: http://${HOST}:${PORT}`);
   console.log(`  Default Admin: admin / LogOps2026!`);
   console.log(`  filtr Bridge: ${process.env.FILTR_URL || 'http://127.0.0.1:8080'}`);
+  console.log(`  Server Path Harvester: ACTIVE (Sample logs in sample_logs/)`);
   console.log(`==========================================================`);
 });

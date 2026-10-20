@@ -15,6 +15,7 @@ RUN cd server && npm install --omit=dev
 # Copy source code and prebuilt frontend
 COPY server/ ./server/
 COPY dist/ ./dist/
+COPY sample_logs/ ./sample_logs/
 
 # Create data directory for persistence
 RUN mkdir -p /app/server/data

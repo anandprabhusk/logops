@@ -33,7 +33,8 @@
   <!-- Header -->
   <header class="sticky top-0 z-50 glass-card border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div class="flex items-center gap-3">
+      <div id="res-harvest-badge" class="hidden mb-3"></div>
+            <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 p-0.5 shadow-lg shadow-indigo-500/20 flex items-center justify-center">
           <div class="w-full h-full bg-slate-950 rounded-[10px] flex items-center justify-center">
             <i data-lucide="shield-alert" class="w-5 h-5 text-indigo-400"></i>
@@ -141,92 +142,249 @@
       
       <!-- Top Card: Enterprise Use Case Selector & Ingestion -->
       <div class="glass-card rounded-2xl p-6 border border-slate-800/90 shadow-xl">
-        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-4">
           <div>
             <h1 class="text-xl font-bold text-white flex items-center gap-2">
               <i data-lucide="cpu" class="w-5 h-5 text-indigo-400"></i>
               Enterprise Log Ingestion & Zero-Leak Redactor
             </h1>
             <p class="text-xs text-slate-400 mt-1">
-              Select an enterprise source incident, review raw stream, then execute the 4-stage Zero-Leak pipeline.
+              Read and ingest logs directly from server directory paths or stream manually, redacting sensitive tokens before LLM analysis.
             </p>
           </div>
 
-          <div class="flex items-center gap-2">
-            <span class="text-[11px] text-slate-400 font-medium">Use Case:</span>
-            <span id="active-source-badge" class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">weblogic</span>
-          </div>
-        </div>
-
-        <!-- 10 Enterprise Source Selectors -->
-        <div class="mb-5">
-          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
-            <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i> Select Production Incident Use Case (1-Click Load):
-          </div>
-          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2" id="source-buttons">
-            <button onclick="selectSource('weblogic')" data-source="weblogic" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white border border-indigo-500 flex items-center gap-2 transition-all shadow-md">
-              <i data-lucide="layers" class="w-3.5 h-3.5"></i> WebLogic
+          <!-- Mode Switcher -->
+          <div class="flex items-center gap-1.5 p-1 bg-slate-900/90 border border-slate-800 rounded-xl">
+            <button id="mode-btn-harvester" onclick="switchIngestionMode('harvester')"
+              class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-sm">
+              <i data-lucide="folder-search" class="w-3.5 h-3.5"></i>
+              Automated Server Path Harvester
             </button>
-            <button onclick="selectSource('kafka')" data-source="kafka" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
-              <i data-lucide="share-2" class="w-3.5 h-3.5"></i> Kafka
-            </button>
-            <button onclick="selectSource('kubernetes')" data-source="kubernetes" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
-              <i data-lucide="boxes" class="w-3.5 h-3.5 text-blue-400"></i> Kubernetes
-            </button>
-            <button onclick="selectSource('postgres')" data-source="postgres" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
-              <i data-lucide="database" class="w-3.5 h-3.5 text-emerald-400"></i> PostgreSQL
-            </button>
-            <button onclick="selectSource('aws')" data-source="aws" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
-              <i data-lucide="cloud" class="w-3.5 h-3.5 text-amber-400"></i> AWS Cloud
-            </button>
-            <button onclick="selectSource('redis')" data-source="redis" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
-              <i data-lucide="zap" class="w-3.5 h-3.5 text-rose-400"></i> Redis Cache
-            </button>
-            <button onclick="selectSource('nginx')" data-source="nginx" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
-              <i data-lucide="shield" class="w-3.5 h-3.5 text-teal-400"></i> Nginx Proxy
-            </button>
-            <button onclick="selectSource('apache')" data-source="apache" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
-              <i data-lucide="globe" class="w-3.5 h-3.5"></i> Apache
-            </button>
-            <button onclick="selectSource('windows')" data-source="windows" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
-              <i data-lucide="terminal" class="w-3.5 h-3.5"></i> Windows Event
-            </button>
-            <button onclick="selectSource('jenkins')" data-source="jenkins" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
-              <i data-lucide="git-commit" class="w-3.5 h-3.5"></i> Jenkins CI
+            <button id="mode-btn-manual" onclick="switchIngestionMode('manual')"
+              class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200">
+              <i data-lucide="file-code" class="w-3.5 h-3.5"></i>
+              Manual Log Stream (Text Box)
             </button>
           </div>
         </div>
 
-        <!-- Input Box -->
-        <div class="space-y-3">
-          <div class="flex items-center justify-between text-xs text-slate-400">
+        <!-- ============================================================= -->
+        <!-- MODE 1: AUTOMATED SERVER PATH HARVESTER                       -->
+        <!-- ============================================================= -->
+        <div id="ingestion-mode-harvester" class="space-y-4">
+          <!-- Server Preset Shortcuts -->
+          <div>
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+              <i data-lucide="server" class="w-3.5 h-3.5 text-indigo-400"></i> Server Folder Presets (1-Click Target):
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="setHarvesterPreset('./sample_logs/apache', 'apache')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-indigo-500/50 flex items-center gap-1.5 transition-all">
+                <i data-lucide="globe" class="w-3.5 h-3.5 text-indigo-400"></i> Apache HTTPD (<code>./sample_logs/apache</code>)
+              </button>
+              <button onclick="setHarvesterPreset('./sample_logs/weblogic', 'weblogic')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-indigo-500/50 flex items-center gap-1.5 transition-all">
+                <i data-lucide="layers" class="w-3.5 h-3.5 text-purple-400"></i> WebLogic (<code>./sample_logs/weblogic</code>)
+              </button>
+              <button onclick="setHarvesterPreset('./sample_logs/kubernetes', 'kubernetes')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-indigo-500/50 flex items-center gap-1.5 transition-all">
+                <i data-lucide="boxes" class="w-3.5 h-3.5 text-blue-400"></i> Kubernetes (<code>./sample_logs/kubernetes</code>)
+              </button>
+              <button onclick="setHarvesterPreset('./sample_logs/postgres', 'postgres')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-indigo-500/50 flex items-center gap-1.5 transition-all">
+                <i data-lucide="database" class="w-3.5 h-3.5 text-emerald-400"></i> PostgreSQL (<code>./sample_logs/postgres</code>)
+              </button>
+              <button onclick="setHarvesterPreset('/var/log/apache2', 'apache')"
+                class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-800 hover:border-indigo-500/50 flex items-center gap-1.5 transition-all">
+                <i data-lucide="terminal" class="w-3.5 h-3.5 text-amber-400"></i> System Apache (<code>/var/log/apache2</code>)
+              </button>
+            </div>
+          </div>
+
+          <!-- Path Input & Pipeline Config Controls -->
+          <div class="grid grid-cols-1 md:grid-cols-12 gap-3 p-4 rounded-xl bg-slate-950/80 border border-slate-800/80">
+            <div class="md:col-span-5 space-y-1">
+              <label class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                <i data-lucide="folder" class="w-3.5 h-3.5 text-indigo-400"></i> Server Folder or File Path
+              </label>
+              <input type="text" id="harvester-path" value="./sample_logs/apache" placeholder="/var/log/apache2 or ./sample_logs/apache"
+                class="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white font-mono placeholder-slate-600 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div class="md:col-span-3 space-y-1">
+              <label class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                <i data-lucide="filter" class="w-3.5 h-3.5 text-indigo-400"></i> Parser Schema
+              </label>
+              <select id="harvester-source-type"
+                class="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-indigo-500">
+                <option value="apache" selected>Apache HTTPD / Web Server</option>
+                <option value="weblogic">Oracle WebLogic Server</option>
+                <option value="kubernetes">Kubernetes Container Logs</option>
+                <option value="postgres">PostgreSQL Relational DB</option>
+                <option value="nginx">Nginx Reverse Proxy / Gateway</option>
+                <option value="kafka">Apache Kafka Event Broker</option>
+                <option value="aws">AWS CloudWatch / IAM Audit</option>
+                <option value="redis">Redis In-Memory Data Store</option>
+                <option value="windows">Windows Event Log (Security)</option>
+                <option value="jenkins">Jenkins CI/CD Build Pipeline</option>
+              </select>
+            </div>
+
+            <div class="md:col-span-2 space-y-1">
+              <label class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                <i data-lucide="list" class="w-3.5 h-3.5 text-indigo-400"></i> Tail Lines / File
+              </label>
+              <input type="number" id="harvester-tail-lines" value="50" min="5" max="500"
+                class="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <div class="md:col-span-2 space-y-1">
+              <label class="text-[11px] font-semibold text-slate-400 flex items-center gap-1">
+                <i data-lucide="file-code" class="w-3.5 h-3.5 text-indigo-400"></i> File Filter
+              </label>
+              <input type="text" id="harvester-pattern" value="*.log" placeholder="*.log"
+                class="w-full bg-slate-900 border border-slate-700/80 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-indigo-500">
+            </div>
+          </div>
+
+          <!-- Action Buttons Bar -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
             <div class="flex items-center gap-2">
-              <span class="font-semibold text-slate-300">Raw Incident Log Stream</span>
-              <span id="log-char-count" class="text-[10px] text-slate-500 font-mono">0 chars</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <button onclick="loadSampleLog()" class="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
-                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Reload Realistic Incident Sample
+              <button onclick="browseServerPath()" id="browse-server-btn"
+                class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs border border-slate-700 flex items-center gap-2 transition-all">
+                <i data-lucide="search" class="w-4 h-4 text-indigo-400"></i>
+                <span>Scan Server Path</span>
               </button>
-              <button onclick="document.getElementById('log-input').value=''; updateCharCount();" class="text-xs font-medium text-slate-500 hover:text-slate-400 transition-colors">
-                Clear
+              <span id="browse-status-text" class="text-xs text-slate-400">Ready to scan server filesystem.</span>
+            </div>
+
+            <button onclick="harvestAndRunPipeline()" id="harvest-run-btn"
+              class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 via-teal-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/25 flex items-center justify-center gap-2 transition-all">
+              <i data-lucide="play" class="w-4 h-4"></i>
+              <span>Harvest & Run Zero-Leak Pipeline</span>
+            </button>
+          </div>
+
+          <!-- Scanned Files Container -->
+          <div id="harvester-files-card" class="hidden rounded-xl border border-slate-800 bg-slate-950/60 p-4 space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <i data-lucide="folder-check" class="w-4 h-4 text-emerald-400"></i>
+                <span class="text-xs font-bold text-white" id="harvester-found-summary">Discovered Log Files</span>
+              </div>
+              <span class="text-[11px] text-slate-500 font-mono" id="harvester-resolved-path"></span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left text-xs">
+                <thead>
+                  <tr class="border-b border-slate-800 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                    <th class="pb-2">File Name</th>
+                    <th class="pb-2">Size</th>
+                    <th class="pb-2">Estimated Lines</th>
+                    <th class="pb-2">Last Modified</th>
+                    <th class="pb-2 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="harvester-files-tbody" class="divide-y divide-slate-800/50 text-slate-300 font-mono">
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Automated Continuous Server Watcher Panel -->
+          <div class="rounded-xl border border-slate-800/80 bg-slate-900/40 p-4 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <i data-lucide="radio" class="w-4 h-4 text-purple-400"></i>
+                <div>
+                  <h4 class="text-xs font-bold text-white">Automated Background Server Watcher Daemon</h4>
+                  <p class="text-[11px] text-slate-400">Continuously monitors the Apache or application server directory for new log entries.</p>
+                </div>
+              </div>
+              <button onclick="addHarvesterWatcher()" class="px-3 py-1.5 rounded-lg bg-indigo-600/80 hover:bg-indigo-600 text-white text-xs font-semibold flex items-center gap-1.5 transition-all">
+                <i data-lucide="plus" class="w-3.5 h-3.5"></i> Register Server Watcher
+              </button>
+            </div>
+            <div id="harvester-watchers-list" class="space-y-2 text-xs">
+              <div class="text-[11px] text-slate-500 italic">No automated server path watchers configured yet. Click "Register Server Watcher" to monitor this folder automatically.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ============================================================= -->
+        <!-- MODE 2: MANUAL LOG STREAM (TEXT BOX)                          -->
+        <!-- ============================================================= -->
+        <div id="ingestion-mode-manual" class="hidden space-y-4">
+          <!-- 10 Enterprise Source Selectors -->
+          <div>
+            <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+              <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i> Select Production Incident Use Case (1-Click Load):
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2" id="source-buttons">
+              <button onclick="selectSource('weblogic')" data-source="weblogic" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white border border-indigo-500 flex items-center gap-2 transition-all shadow-md">
+                <i data-lucide="layers" class="w-3.5 h-3.5"></i> WebLogic
+              </button>
+              <button onclick="selectSource('kafka')" data-source="kafka" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+                <i data-lucide="share-2" class="w-3.5 h-3.5"></i> Kafka
+              </button>
+              <button onclick="selectSource('kubernetes')" data-source="kubernetes" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+                <i data-lucide="boxes" class="w-3.5 h-3.5 text-blue-400"></i> Kubernetes
+              </button>
+              <button onclick="selectSource('postgres')" data-source="postgres" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+                <i data-lucide="database" class="w-3.5 h-3.5 text-emerald-400"></i> PostgreSQL
+              </button>
+              <button onclick="selectSource('aws')" data-source="aws" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+                <i data-lucide="cloud" class="w-3.5 h-3.5 text-amber-400"></i> AWS Cloud
+              </button>
+              <button onclick="selectSource('redis')" data-source="redis" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+                <i data-lucide="zap" class="w-3.5 h-3.5 text-rose-400"></i> Redis Cache
+              </button>
+              <button onclick="selectSource('nginx')" data-source="nginx" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+                <i data-lucide="shield" class="w-3.5 h-3.5 text-teal-400"></i> Nginx Proxy
+              </button>
+              <button onclick="selectSource('apache')" data-source="apache" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+                <i data-lucide="globe" class="w-3.5 h-3.5"></i> Apache
+              </button>
+              <button onclick="selectSource('windows')" data-source="windows" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+                <i data-lucide="terminal" class="w-3.5 h-3.5"></i> Windows Event
+              </button>
+              <button onclick="selectSource('jenkins')" data-source="jenkins" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+                <i data-lucide="git-commit" class="w-3.5 h-3.5"></i> Jenkins CI
               </button>
             </div>
           </div>
 
-          <textarea id="log-input" rows="7" placeholder="Paste enterprise log lines here..." oninput="updateCharCount()"
-            class="w-full bg-slate-950/90 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 leading-relaxed"></textarea>
-
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
-            <div class="flex items-center gap-2 text-xs text-slate-400">
-              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400 shrink-0"></i>
-              <span>Zero-Leak Guarantee: All IP addresses, users, passwords, and tokens are replaced with surrogate tokens before model egress.</span>
+          <!-- Input Box -->
+          <div class="space-y-3">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-slate-300">Raw Incident Log Stream</span>
+                <span id="log-char-count" class="text-[10px] text-slate-500 font-mono">0 chars</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <button onclick="loadSampleLog()" class="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Reload Realistic Incident Sample
+                </button>
+                <button onclick="document.getElementById('log-input').value=''; updateCharCount();" class="text-xs font-medium text-slate-500 hover:text-slate-400 transition-colors">
+                  Clear
+                </button>
+              </div>
             </div>
-            <button onclick="runPipeline()" id="run-pipeline-btn"
-              class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all">
-              <i data-lucide="play" class="w-4 h-4"></i>
-              <span>Execute 4-Stage Zero-Leak Pipeline</span>
-            </button>
+
+            <textarea id="log-input" rows="7" placeholder="Paste enterprise log lines here..." oninput="updateCharCount()"
+              class="w-full bg-slate-950/90 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 leading-relaxed"></textarea>
+
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+              <div class="flex items-center gap-2 text-xs text-slate-400">
+                <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+                <span>Zero-Leak Guarantee: All IP addresses, users, passwords, and tokens are replaced with surrogate tokens before model egress.</span>
+              </div>
+              <button onclick="runPipeline()" id="run-pipeline-btn"
+                class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all">
+                <i data-lucide="play" class="w-4 h-4"></i>
+                <span>Execute 4-Stage Zero-Leak Pipeline</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -947,6 +1105,8 @@ Finished: FAILURE`
       }
       selectSource('weblogic');
       fetchReports();
+      browseServerPath();
+      loadHarvesterWatchers();
       fetchApiKeys();
       checkHealthStatus();
       if (!statusInterval) statusInterval = setInterval(checkHealthStatus, 10000);
@@ -1046,7 +1206,276 @@ Finished: FAILURE`
       }
     }
 
-    async function runPipeline() {
+    
+    // =========================================================================
+    // Automated Server Path Harvester Logic
+    // =========================================================================
+    let currentIngestionMode = 'harvester';
+
+    function switchIngestionMode(mode) {
+      currentIngestionMode = mode;
+      const btnHarvester = document.getElementById('mode-btn-harvester');
+      const btnManual = document.getElementById('mode-btn-manual');
+      const divHarvester = document.getElementById('ingestion-mode-harvester');
+      const divManual = document.getElementById('ingestion-mode-manual');
+
+      if (mode === 'harvester') {
+        btnHarvester.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-sm';
+        btnManual.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200';
+        divHarvester.classList.remove('hidden');
+        divManual.classList.add('hidden');
+      } else {
+        btnManual.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 bg-indigo-600 text-white shadow-sm';
+        btnHarvester.className = 'px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 text-slate-400 hover:text-slate-200';
+        divManual.classList.remove('hidden');
+        divHarvester.classList.add('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    function setHarvesterPreset(path, sourceType) {
+      document.getElementById('harvester-path').value = path;
+      document.getElementById('harvester-source-type').value = sourceType;
+      browseServerPath();
+    }
+
+    async function browseServerPath() {
+      const path = document.getElementById('harvester-path').value.trim();
+      const pattern = document.getElementById('harvester-pattern').value.trim();
+      if (!path) {
+        alert('Please specify a server log folder or file path.');
+        return;
+      }
+
+      const browseBtn = document.getElementById('browse-server-btn');
+      const statusText = document.getElementById('browse-status-text');
+      browseBtn.disabled = true;
+      statusText.innerHTML = '<span class="text-indigo-400 flex items-center gap-1"><i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Scanning server path...</span>';
+      lucide.createIcons();
+
+      try {
+        const response = await fetch('/api/harvester/browse', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ path, pattern })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to scan server path');
+
+        const filesCard = document.getElementById('harvester-files-card');
+        const tbody = document.getElementById('harvester-files-tbody');
+        const summary = document.getElementById('harvester-found-summary');
+        const resolvedPath = document.getElementById('harvester-resolved-path');
+
+        filesCard.classList.remove('hidden');
+        summary.innerText = `Discovered ${data.totalFiles} log file(s)`;
+        resolvedPath.innerText = data.targetPath || path;
+
+        tbody.innerHTML = '';
+        if (data.files && data.files.length > 0) {
+          data.files.forEach(f => {
+            const tr = document.createElement('tr');
+            tr.className = 'hover:bg-slate-900/60 transition-colors';
+            tr.innerHTML = `
+              <td class="py-2.5 font-semibold text-white flex items-center gap-2">
+                <i data-lucide="file-text" class="w-3.5 h-3.5 text-indigo-400"></i>
+                ${f.name}
+              </td>
+              <td class="py-2.5 text-slate-400">${f.sizeFormatted || (f.size + ' B')}</td>
+              <td class="py-2.5 text-indigo-300 font-bold">${f.linesCount != null ? f.linesCount : '~'} lines</td>
+              <td class="py-2.5 text-slate-500 text-[11px]">${f.modifiedAt ? new Date(f.modifiedAt).toLocaleTimeString() : 'N/A'}</td>
+              <td class="py-2.5 text-right">
+                <button onclick="previewServerFile('${f.path.replace(/\\/g, '/')}')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-indigo-300 text-[11px] font-sans font-medium transition-colors">
+                  Preview
+                </button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        } else {
+          tbody.innerHTML = `<tr><td colspan="5" class="py-4 text-center text-slate-500 italic">No log files found matching pattern in this directory.</td></tr>`;
+        }
+
+        statusText.innerHTML = `<span class="text-emerald-400 font-medium">✓ Found ${data.totalFiles} file(s) on server</span>`;
+        lucide.createIcons();
+
+      } catch (err) {
+        statusText.innerHTML = `<span class="text-rose-400">Scan failed: ${err.message}</span>`;
+      } finally {
+        browseBtn.disabled = false;
+        lucide.createIcons();
+      }
+    }
+
+    async function previewServerFile(filePath) {
+      try {
+        const response = await fetch('/api/harvester/preview', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ filePath, lines: 40 })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to preview file');
+
+        document.getElementById('preview-modal-title').innerText = filePath.split('/').pop().split('\\').pop();
+        document.getElementById('preview-modal-lines').innerText = `${data.previewLines} lines shown (total ~${data.totalLines})`;
+        document.getElementById('preview-modal-path').innerText = filePath;
+        document.getElementById('preview-modal-content').innerText = data.preview || '(Empty file)';
+        document.getElementById('preview-modal').classList.remove('hidden');
+        lucide.createIcons();
+      } catch (err) {
+        alert('Preview Error: ' + err.message);
+      }
+    }
+
+    function closePreviewModal() {
+      document.getElementById('preview-modal').classList.add('hidden');
+    }
+
+    async function harvestAndRunPipeline() {
+      const path = document.getElementById('harvester-path').value.trim();
+      const sourceType = document.getElementById('harvester-source-type').value;
+      const tailLines = parseInt(document.getElementById('harvester-tail-lines').value, 10) || 50;
+      const pattern = document.getElementById('harvester-pattern').value.trim();
+
+      if (!path) {
+        alert('Please specify a server log folder path.');
+        return;
+      }
+
+      const harvestBtn = document.getElementById('harvest-run-btn');
+      harvestBtn.disabled = true;
+      harvestBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> <span>Harvesting & Redacting...</span>`;
+      lucide.createIcons();
+
+      resetStepper();
+
+      // Stage 1 animation
+      const c1 = document.getElementById('card-stage-1');
+      c1.classList.add('active');
+      document.getElementById('stat-stage-1').innerText = 'Harvesting from server...';
+
+      try {
+        const response = await fetch('/api/harvester/ingest', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ path, sourceType, tailLines, pattern })
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Server log harvesting failed');
+
+        currentReport = data.report;
+        updateStepperSuccess(currentReport);
+        renderPipelineResults(currentReport);
+
+        const rawSample = currentReport.stages?.parsing?.rawText || `[Harvested ${data.harvestSource.totalHarvestedLines} lines from ${data.harvestSource.path}]`;
+        document.getElementById('log-input').value = rawSample;
+        updateCharCount();
+        updateDiffView(currentReport, rawSample);
+        fetchReports();
+
+      } catch (err) {
+        alert('Harvesting Pipeline Error: ' + err.message);
+      } finally {
+        harvestBtn.disabled = false;
+        harvestBtn.innerHTML = `<i data-lucide="play" class="w-4 h-4"></i> <span>Harvest & Run Zero-Leak Pipeline</span>`;
+        lucide.createIcons();
+      }
+    }
+
+    async function loadHarvesterWatchers() {
+      try {
+        const response = await fetch('/api/harvester/watchers', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const watchers = await response.json();
+        const container = document.getElementById('harvester-watchers-list');
+        if (!watchers || watchers.length === 0) {
+          container.innerHTML = '<div class="text-[11px] text-slate-500 italic">No automated server path watchers configured yet. Click "Register Server Watcher" to monitor this folder automatically.</div>';
+          return;
+        }
+
+        container.innerHTML = watchers.map(w => `
+          <div class="flex items-center justify-between p-2.5 rounded-lg bg-slate-950/80 border border-slate-800">
+            <div class="flex items-center gap-3">
+              <span class="w-2.5 h-2.5 rounded-full ${w.active ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'}"></span>
+              <div>
+                <div class="font-mono text-xs text-white font-semibold">${w.path}</div>
+                <div class="text-[10px] text-slate-400">Schema: <span class="text-indigo-400 font-bold">${w.sourceType}</span> | Interval: ${w.pollIntervalMs / 1000}s | Monitored: ${w.filesMonitored} files</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="toggleWatcher('${w.id}')" class="px-2.5 py-1 rounded text-[11px] font-medium ${w.active ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}">
+                ${w.active ? 'Pause' : 'Resume'}
+              </button>
+              <button onclick="deleteWatcher('${w.id}')" class="p-1 text-slate-500 hover:text-rose-400 transition-colors">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      } catch (e) {
+        console.error('Failed to load watchers', e);
+      }
+    }
+
+    async function addHarvesterWatcher() {
+      const path = document.getElementById('harvester-path').value.trim();
+      const sourceType = document.getElementById('harvester-source-type').value;
+      if (!path) {
+        alert('Please enter a server path to monitor.');
+        return;
+      }
+      try {
+        const response = await fetch('/api/harvester/watchers', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({
+            path,
+            sourceType,
+            pollIntervalMs: 15000,
+            autoAnalyze: true
+          })
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to create watcher');
+        loadHarvesterWatchers();
+      } catch (err) {
+        alert('Watcher Error: ' + err.message);
+      }
+    }
+
+    async function toggleWatcher(id) {
+      await fetch(`/api/harvester/watchers/${id}/toggle`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      loadHarvesterWatchers();
+    }
+
+    async function deleteWatcher(id) {
+      await fetch(`/api/harvester/watchers/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      loadHarvesterWatchers();
+    }
+
+async function runPipeline() {
       const logs = document.getElementById('log-input').value.trim();
       if (!logs) {
         alert('Please paste or load logs to run pipeline.');
@@ -1149,6 +1578,22 @@ Finished: FAILURE`
       }
 
       document.getElementById('res-incident-title').innerText = title;
+      // Display Server Harvest Source Badge if ingested from server directory
+      const harvestBadgeContainer = document.getElementById('res-harvest-badge');
+      if (harvestBadgeContainer) {
+        if (report.harvestSource) {
+          harvestBadgeContainer.classList.remove('hidden');
+          harvestBadgeContainer.innerHTML = `
+            <div class="px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs flex items-center gap-2">
+              <i data-lucide="folder-check" class="w-4 h-4"></i>
+              <span>Harvested from Server: <strong class="font-mono text-emerald-300">${report.harvestSource.path}</strong> (${report.harvestSource.totalHarvestedLines} lines across ${report.harvestSource.filesProcessed.length} files)</span>
+            </div>
+          `;
+        } else {
+          harvestBadgeContainer.classList.add('hidden');
+        }
+      }
+
       document.getElementById('res-source-name').innerText = report.sourceType;
       document.getElementById('res-report-id').innerText = report.id;
       document.getElementById('res-entities-count').innerText = report.stages?.sanitization?.redactedCount || tokenLedger.length;
@@ -1520,5 +1965,31 @@ Finished: FAILURE`
       return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
   </script>
+
+  <!-- Server Log File Preview Modal -->
+  <div id="preview-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-card rounded-2xl border border-slate-800 w-full max-w-4xl max-h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-6 py-4 border-b border-slate-800/80 flex items-center justify-between bg-slate-900/50">
+        <div class="flex items-center gap-2">
+          <i data-lucide="file-text" class="w-5 h-5 text-indigo-400"></i>
+          <span class="font-bold text-sm text-white" id="preview-modal-title">Log File Preview</span>
+          <span id="preview-modal-lines" class="text-xs px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-mono">0 lines</span>
+        </div>
+        <button onclick="closePreviewModal()" class="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1 bg-slate-950/90 font-mono text-xs text-slate-300 leading-relaxed">
+        <pre id="preview-modal-content" class="whitespace-pre-wrap select-text"></pre>
+      </div>
+      <div class="px-6 py-3 border-t border-slate-800/80 bg-slate-900/40 flex items-center justify-between text-xs text-slate-400">
+        <span id="preview-modal-path" class="truncate font-mono"></span>
+        <button onclick="closePreviewModal()" class="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-white font-medium transition-colors">
+          Close Preview
+        </button>
+      </div>
+    </div>
+  </div>
+
 </body>
 </html>

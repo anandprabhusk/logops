@@ -1,0 +1,4 @@
+####<Oct 20, 2026 2:15:20 PM UTC> <Error> <WebLogicServer> <prod-wls-01.corp.internal> <ManagedServer_2> <[ACTIVE] ExecuteThread: '4' for queue: 'weblogic.kernel.Default (self-tuning)'> <<WLS Kernel>> <> <000000> <BEA-000337> <[STUCK] ExecuteThread: '4' for queue: 'weblogic.kernel.Default (self-tuning)' has been busy for "680" seconds working on the request "HttpTrace", which is more than the configured time (StuckThreadMaxTime) of "600" seconds. Stack trace:
+java.sql.SQLException: Connection pool "OracleFinDS" has reached MaxCapacity=100. Connection allocation timed out after 30000ms.
+	at weblogic.jdbc.common.internal.ConnectionEnv.allocate(ConnectionEnv.java:312)
+	Database endpoint: jdbc:oracle:thin:@10.100.40.15:1521/ORCLFIN with user=app_db_user password="SuperSecretPassword2026!">

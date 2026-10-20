@@ -1,0 +1,5 @@
+[Tue Oct 20 14:15:20.892019 2026] [proxy:error] [pid 14208:tid 1399] [client 198.51.100.42:54210] AH00898: Error reading from remote server returned by /api/v2/checkout
+[Tue Oct 20 14:15:20.893102 2026] [proxy_http:error] [pid 14208:tid 1399] (70007)The timeout specified has expired: [client 198.51.100.42:54210] AH01102: error reading status line from remote server 10.240.12.88:8080
+[Tue Oct 20 14:15:21.011244 2026] [mpm_event:error] [pid 14199:tid 1402] AH00484: server reached MaxRequestWorkers setting, consider raising the MaxRequestWorkers setting
+[Tue Oct 20 14:15:21.114520 2026] [core:error] [pid 14199:tid 1402] [client 192.168.1.105:58210] AH00124: Request exceeded the limit of 10 internal redirects due to configuration error. Use 'LimitInternalRecursion' to increase the limit if necessary.
+[Tue Oct 20 14:15:22.002190 2026] [ssl:error] [pid 14200:tid 1405] [client 198.51.100.77:49120] AH02032: Hostname api.payment.internal provided via SNI and hostname in HTTP request do not match

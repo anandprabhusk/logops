@@ -1,5 +1,467 @@
 [
   {
+    "id": "rep_1792517848070_ba2cc8ff",
+    "createdAt": "2026-10-20T17:37:28.070Z",
+    "durationMs": 223,
+    "executionMs": 223,
+    "sourceType": "apache",
+    "rawLogLines": 8,
+    "filtrEngineStatus": "live_container",
+    "llmEngineStatus": "intelligence_simulator",
+    "diagnostic": {
+      "incidentTitle": "Apache HTTPD Upstream 502/504 Gateway Timeout & Worker Saturation",
+      "severity": "HIGH",
+      "rootCause": "Apache mod_proxy failed to read status line from remote upstream 198.51.100.42 requested by client john.doe@company.com. Server reached MaxRequestWorkers limit.",
+      "affectedComponents": [
+        "Apache mod_proxy_http",
+        "Upstream Server: 198.51.100.42",
+        "Client: john.doe@company.com"
+      ],
+      "remediationSteps": [
+        "Increase ProxyTimeout from 60 to 120 seconds in httpd.conf for upstream 198.51.100.42.",
+        "Increase ServerLimit and MaxRequestWorkers in mpm_event.conf to handle peak concurrency.",
+        "Inspect network socket connections and health on 198.51.100.42.",
+        "Gracefully reload Apache: apachectl -k graceful."
+      ],
+      "anomalyTimeline": [
+        {
+          "timestamp": "20/Oct/2026:14:15:22 +0000",
+          "event": "POST /api/v2/checkout -> 504"
+        },
+        {
+          "timestamp": "20/Oct/2026:14:15:23 +0000",
+          "event": "POST /api/v1/invoices/process -> 500"
+        },
+        {
+          "timestamp": "20/Oct/2026:14:15:24 +0000",
+          "event": "GET /server-status -> 403"
+        },
+        {
+          "timestamp": "Tue Oct 20 14:15:20.892019 2026",
+          "event": "AH00898: Error reading from remote server returned by /api/v2/checkout"
+        },
+        {
+          "timestamp": "Tue Oct 20 14:15:20.893102 2026",
+          "event": "(70007)The timeout specified has expired: [client 198.51.100.42:54210] AH01102: error reading status line from remote server 10.240.12.88:8080"
+        },
+        {
+          "timestamp": "Tue Oct 20 14:15:21.011244 2026",
+          "event": "AH00484: server reached MaxRequestWorkers setting, consider raising the MaxRequestWorkers setting"
+        }
+      ]
+    },
+    "tokenLedger": [
+      {
+        "token": "[IP_1]",
+        "type": "NETWORK",
+        "original": "198.51.100.42",
+        "ruleName": "IPv4 Address",
+        "severity": "high"
+      },
+      {
+        "token": "[EMAIL_1]",
+        "type": "PII",
+        "original": "john.doe@company.com",
+        "ruleName": "Email Address",
+        "severity": "high"
+      },
+      {
+        "token": "[AUTH_HEADER_TOKEN_1]",
+        "type": "CREDENTIALS",
+        "original": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token123",
+        "ruleName": "HTTP Authorization Header Secret",
+        "severity": "critical"
+      },
+      {
+        "token": "[PRIVATE_IP_1]",
+        "type": "NETWORK",
+        "original": "192.168.1.105",
+        "ruleName": "Internal RFC 1918 Private IP with Port",
+        "severity": "high"
+      },
+      {
+        "token": "[INTERNAL_HOST_1]",
+        "type": "NETWORK",
+        "original": "billing.corp.internal",
+        "ruleName": "Corporate Internal Domain / FQDN",
+        "severity": "high"
+      },
+      {
+        "token": "[PRIVATE_IP_2]",
+        "type": "NETWORK",
+        "original": "10.240.12.88",
+        "ruleName": "Internal RFC 1918 Private IP with Port",
+        "severity": "high"
+      },
+      {
+        "token": "[UK_NHS_NUMBER_1]",
+        "type": "PHI",
+        "original": "892019 2026",
+        "ruleName": "UK NHS Patient & Health Identifier",
+        "severity": "critical"
+      },
+      {
+        "token": "[IP_1]",
+        "type": "NETWORK",
+        "original": "198.51.100.42",
+        "ruleName": "IPv4 Address",
+        "severity": "high"
+      },
+      {
+        "token": "[UK_NHS_NUMBER_2]",
+        "type": "PHI",
+        "original": "893102 2026",
+        "ruleName": "UK NHS Patient & Health Identifier",
+        "severity": "critical"
+      },
+      {
+        "token": "[IP_1]",
+        "type": "NETWORK",
+        "original": "198.51.100.42",
+        "ruleName": "IPv4 Address",
+        "severity": "high"
+      },
+      {
+        "token": "[PRIVATE_IP_3]",
+        "type": "NETWORK",
+        "original": "10.240.12.88:8080",
+        "ruleName": "Internal RFC 1918 Private IP with Port",
+        "severity": "high"
+      },
+      {
+        "token": "[UK_NHS_NUMBER_3]",
+        "type": "PHI",
+        "original": "011244 2026",
+        "ruleName": "UK NHS Patient & Health Identifier",
+        "severity": "critical"
+      },
+      {
+        "token": "[UK_NHS_NUMBER_4]",
+        "type": "PHI",
+        "original": "114520 2026",
+        "ruleName": "UK NHS Patient & Health Identifier",
+        "severity": "critical"
+      },
+      {
+        "token": "[PRIVATE_IP_4]",
+        "type": "NETWORK",
+        "original": "192.168.1.105:58210",
+        "ruleName": "Internal RFC 1918 Private IP with Port",
+        "severity": "high"
+      },
+      {
+        "token": "[UK_NHS_NUMBER_5]",
+        "type": "PHI",
+        "original": "002190 2026",
+        "ruleName": "UK NHS Patient & Health Identifier",
+        "severity": "critical"
+      },
+      {
+        "token": "[IP_2]",
+        "type": "NETWORK",
+        "original": "198.51.100.77",
+        "ruleName": "IPv4 Address",
+        "severity": "high"
+      },
+      {
+        "token": "[DEV_INTERNAL_HOST_1]",
+        "type": "NETWORK",
+        "original": "api.payment.internal",
+        "ruleName": "Internal Corporate & Dev Hostname / FQDN",
+        "severity": "high"
+      }
+    ],
+    "parsedMetadata": {
+      "eventType": "APACHE Incident",
+      "totalLines": 8,
+      "errors": 7,
+      "warnings": 1,
+      "info": 0
+    },
+    "stages": {
+      "ingest": {
+        "totalLines": 8,
+        "errors": 7,
+        "warnings": 1,
+        "info": 0,
+        "sampleEvents": [
+          {
+            "source": "apache",
+            "type": "access",
+            "timestamp": "20/Oct/2026:14:15:22 +0000",
+            "level": "CRITICAL",
+            "clientIp": "198.51.100.42",
+            "method": "POST",
+            "path": "/api/v2/checkout",
+            "statusCode": 504,
+            "message": "POST /api/v2/checkout -> 504"
+          },
+          {
+            "source": "apache",
+            "type": "access",
+            "timestamp": "20/Oct/2026:14:15:23 +0000",
+            "level": "CRITICAL",
+            "clientIp": "192.168.1.105",
+            "method": "POST",
+            "path": "/api/v1/invoices/process",
+            "statusCode": 500,
+            "message": "POST /api/v1/invoices/process -> 500"
+          },
+          {
+            "source": "apache",
+            "type": "access",
+            "timestamp": "20/Oct/2026:14:15:24 +0000",
+            "level": "WARN",
+            "clientIp": "10.240.12.88",
+            "method": "GET",
+            "path": "/server-status",
+            "statusCode": 403,
+            "message": "GET /server-status -> 403"
+          },
+          {
+            "source": "apache",
+            "type": "error",
+            "timestamp": "Tue Oct 20 14:15:20.892019 2026",
+            "level": "ERROR",
+            "clientIp": "198.51.100.42",
+            "message": "AH00898: Error reading from remote server returned by /api/v2/checkout"
+          },
+          {
+            "source": "apache",
+            "type": "error",
+            "timestamp": "Tue Oct 20 14:15:20.893102 2026",
+            "level": "ERROR",
+            "clientIp": "internal",
+            "message": "(70007)The timeout specified has expired: [client 198.51.100.42:54210] AH01102: error reading status line from remote server 10.240.12.88:8080"
+          },
+          {
+            "source": "apache",
+            "type": "error",
+            "timestamp": "Tue Oct 20 14:15:21.011244 2026",
+            "level": "ERROR",
+            "clientIp": "internal",
+            "message": "AH00484: server reached MaxRequestWorkers setting, consider raising the MaxRequestWorkers setting"
+          },
+          {
+            "source": "apache",
+            "type": "error",
+            "timestamp": "Tue Oct 20 14:15:21.114520 2026",
+            "level": "ERROR",
+            "clientIp": "192.168.1.105",
+            "message": "AH00124: Request exceeded the limit of 10 internal redirects due to configuration error. Use 'LimitInternalRecursion' to increase the limit if necessary."
+          },
+          {
+            "source": "apache",
+            "type": "error",
+            "timestamp": "Tue Oct 20 14:15:22.002190 2026",
+            "level": "ERROR",
+            "clientIp": "198.51.100.77",
+            "message": "AH02032: Hostname api.payment.internal provided via SNI and hostname in HTTP request do not match"
+          }
+        ]
+      },
+      "sanitization": {
+        "sessionId": "96cefe10-639f-4316-8cfa-e823f49b8152",
+        "redactedCount": 17,
+        "byCategory": {
+          "network": 10,
+          "pii": 1,
+          "credentials": 1,
+          "phi": 5
+        },
+        "sanitizedPreview": "[IP_1] - [EMAIL_1] [20/Oct/2026:14:15:22 +0000] \"POST /api/v2/checkout HTTP/1.1\" 504 182 \"https://portal.company.com/cart\" \"Mozilla/5.0\" [AUTH_HEADER_TOKEN_1]\n[PRIVATE_IP_1] - svc_payment_gateway [20/Oct/2026:14:15:23 +0000] \"POST /api/v1/invoices/process HTTP/1.1\" 500 2412 \"https://[INTERNAL_HOST_1]\" \"Mozilla/5.0\"\n[PRIVATE_IP_2] - - [20/Oct/2026:14:15:24 +0000] \"GET /server-status HTTP/1.1\" 403 481 \"-\" \"curl/7.88.1\"\n[Tue Oct 20 14:15:20.[UK_NHS_NUMBER_1]] [proxy:error] [pid 14208:tid 1399] [client [IP_1]:54210] AH00898: Error reading from remote server returned by /api/v2/checkout\n[Tue Oct 20 14:15:20.[UK_NHS_NUMBER_2]] [proxy_http:error] [pid 14208:tid 1399] (70007)The timeout specified has expired: [client [IP_1]:54210] AH01102: error reading status line from remote server [PRIVATE_IP_3]\n[Tue Oct 20 14:15:21.[UK_NHS_NUMBER_3]] [mpm_event:error] [pid 14199:tid 1402] AH00484: server reached MaxRequestWorkers setting, consider raising the MaxRequestWorkers setting\n[Tue Oct 20 14:15:21.[UK_NHS_NUMBER_4]] [core:error] [pid 14199:tid 1402] [client [PRIVATE_IP_4]] AH00124: Request exceeded the limit of 10 internal redirects due to configuration error. Use 'LimitInternalRecursion' to increase the limit if necessary.\n[Tue Oct 20 14:15:22.[UK_NHS_NUMBER_5]] [ssl:error] [pid 14200:tid 1405] [client [IP_2]:49120] AH02032: Hostname [DEV_INTERNAL_HOST_1] provided via SNI and hostname in HTTP request do not match",
+        "entities": [
+          {
+            "token": "[IP_1]",
+            "type": "NETWORK",
+            "original": "198.51.100.42",
+            "ruleName": "IPv4 Address",
+            "severity": "high"
+          },
+          {
+            "token": "[EMAIL_1]",
+            "type": "PII",
+            "original": "john.doe@company.com",
+            "ruleName": "Email Address",
+            "severity": "high"
+          },
+          {
+            "token": "[AUTH_HEADER_TOKEN_1]",
+            "type": "CREDENTIALS",
+            "original": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token123",
+            "ruleName": "HTTP Authorization Header Secret",
+            "severity": "critical"
+          },
+          {
+            "token": "[PRIVATE_IP_1]",
+            "type": "NETWORK",
+            "original": "192.168.1.105",
+            "ruleName": "Internal RFC 1918 Private IP with Port",
+            "severity": "high"
+          },
+          {
+            "token": "[INTERNAL_HOST_1]",
+            "type": "NETWORK",
+            "original": "billing.corp.internal",
+            "ruleName": "Corporate Internal Domain / FQDN",
+            "severity": "high"
+          },
+          {
+            "token": "[PRIVATE_IP_2]",
+            "type": "NETWORK",
+            "original": "10.240.12.88",
+            "ruleName": "Internal RFC 1918 Private IP with Port",
+            "severity": "high"
+          },
+          {
+            "token": "[UK_NHS_NUMBER_1]",
+            "type": "PHI",
+            "original": "892019 2026",
+            "ruleName": "UK NHS Patient & Health Identifier",
+            "severity": "critical"
+          },
+          {
+            "token": "[IP_1]",
+            "type": "NETWORK",
+            "original": "198.51.100.42",
+            "ruleName": "IPv4 Address",
+            "severity": "high"
+          },
+          {
+            "token": "[UK_NHS_NUMBER_2]",
+            "type": "PHI",
+            "original": "893102 2026",
+            "ruleName": "UK NHS Patient & Health Identifier",
+            "severity": "critical"
+          },
+          {
+            "token": "[IP_1]",
+            "type": "NETWORK",
+            "original": "198.51.100.42",
+            "ruleName": "IPv4 Address",
+            "severity": "high"
+          },
+          {
+            "token": "[PRIVATE_IP_3]",
+            "type": "NETWORK",
+            "original": "10.240.12.88:8080",
+            "ruleName": "Internal RFC 1918 Private IP with Port",
+            "severity": "high"
+          },
+          {
+            "token": "[UK_NHS_NUMBER_3]",
+            "type": "PHI",
+            "original": "011244 2026",
+            "ruleName": "UK NHS Patient & Health Identifier",
+            "severity": "critical"
+          },
+          {
+            "token": "[UK_NHS_NUMBER_4]",
+            "type": "PHI",
+            "original": "114520 2026",
+            "ruleName": "UK NHS Patient & Health Identifier",
+            "severity": "critical"
+          },
+          {
+            "token": "[PRIVATE_IP_4]",
+            "type": "NETWORK",
+            "original": "192.168.1.105:58210",
+            "ruleName": "Internal RFC 1918 Private IP with Port",
+            "severity": "high"
+          },
+          {
+            "token": "[UK_NHS_NUMBER_5]",
+            "type": "PHI",
+            "original": "002190 2026",
+            "ruleName": "UK NHS Patient & Health Identifier",
+            "severity": "critical"
+          },
+          {
+            "token": "[IP_2]",
+            "type": "NETWORK",
+            "original": "198.51.100.77",
+            "ruleName": "IPv4 Address",
+            "severity": "high"
+          },
+          {
+            "token": "[DEV_INTERNAL_HOST_1]",
+            "type": "NETWORK",
+            "original": "api.payment.internal",
+            "ruleName": "Internal Corporate & Dev Hostname / FQDN",
+            "severity": "high"
+          }
+        ]
+      },
+      "llmInference": {
+        "model": "deepseek-r1",
+        "promptLength": 1424,
+        "rawSurrogateOutput": "{\n  \"incidentTitle\": \"Apache HTTPD Upstream 502/504 Gateway Timeout & Worker Saturation\",\n  \"severity\": \"HIGH\",\n  \"rootCause\": \"Apache mod_proxy failed to read status line from remote upstream [IP_1] requested by client [EMAIL_1]. Server reached MaxRequestWorkers limit.\",\n  \"affectedComponents\": [\n    \"Apache mod_proxy_http\",\n    \"Upstream Server: [IP_1]\",\n    \"Client: [EMAIL_1]\"\n  ],\n  \"remediationSteps\": [\n    \"Increase ProxyTimeout from 60 to 120 seconds in httpd.conf for upstream [IP_1].\",\n    \"Increase ServerLimit and MaxRequestWorkers in mpm_event.conf to handle peak concurrency.\",\n    \"Inspect network socket connections and health on [IP_1].\",\n    \"Gracefully reload Apache: apachectl -k graceful.\"\n  ],\n  \"anomalyTimeline\": [\n    {\n      \"timestamp\": \"20/Oct/2026:14:15:22 +0000\",\n      \"event\": \"POST /api/v2/checkout -> 504\"\n    },\n    {\n      \"timestamp\": \"20/Oct/2026:14:15:23 +0000\",\n      \"event\": \"POST /api/v1/invoices/process -> 500\"\n    },\n    {\n      \"timestamp\": \"20/Oct/2026:14:15:24 +0000\",\n      \"event\": \"GET /server-status -> 403\"\n    },\n    {\n      \"timestamp\": \"Tue Oct 20 14:15:20.892019 2026\",\n      \"event\": \"AH00898: Error reading from remote server returned by /api/v2/checkout\"\n    },\n    {\n      \"timestamp\": \"Tue Oct 20 14:15:20.893102 2026\",\n      \"event\": \"(70007)The timeout specified has expired: [client 198.51.100.42:54210] AH01102: error reading status line from remote server 10.240.12.88:8080\"\n    },\n    {\n      \"timestamp\": \"Tue Oct 20 14:15:21.011244 2026\",\n      \"event\": \"AH00484: server reached MaxRequestWorkers setting, consider raising the MaxRequestWorkers setting\"\n    }\n  ]\n}"
+      },
+      "rehydration": {
+        "tokensRestored": 6,
+        "finalReport": {
+          "incidentTitle": "Apache HTTPD Upstream 502/504 Gateway Timeout & Worker Saturation",
+          "severity": "HIGH",
+          "rootCause": "Apache mod_proxy failed to read status line from remote upstream 198.51.100.42 requested by client john.doe@company.com. Server reached MaxRequestWorkers limit.",
+          "affectedComponents": [
+            "Apache mod_proxy_http",
+            "Upstream Server: 198.51.100.42",
+            "Client: john.doe@company.com"
+          ],
+          "remediationSteps": [
+            "Increase ProxyTimeout from 60 to 120 seconds in httpd.conf for upstream 198.51.100.42.",
+            "Increase ServerLimit and MaxRequestWorkers in mpm_event.conf to handle peak concurrency.",
+            "Inspect network socket connections and health on 198.51.100.42.",
+            "Gracefully reload Apache: apachectl -k graceful."
+          ],
+          "anomalyTimeline": [
+            {
+              "timestamp": "20/Oct/2026:14:15:22 +0000",
+              "event": "POST /api/v2/checkout -> 504"
+            },
+            {
+              "timestamp": "20/Oct/2026:14:15:23 +0000",
+              "event": "POST /api/v1/invoices/process -> 500"
+            },
+            {
+              "timestamp": "20/Oct/2026:14:15:24 +0000",
+              "event": "GET /server-status -> 403"
+            },
+            {
+              "timestamp": "Tue Oct 20 14:15:20.892019 2026",
+              "event": "AH00898: Error reading from remote server returned by /api/v2/checkout"
+            },
+            {
+              "timestamp": "Tue Oct 20 14:15:20.893102 2026",
+              "event": "(70007)The timeout specified has expired: [client 198.51.100.42:54210] AH01102: error reading status line from remote server 10.240.12.88:8080"
+            },
+            {
+              "timestamp": "Tue Oct 20 14:15:21.011244 2026",
+              "event": "AH00484: server reached MaxRequestWorkers setting, consider raising the MaxRequestWorkers setting"
+            }
+          ]
+        }
+      }
+    },
+    "harvestSource": {
+      "type": "server_path",
+      "path": "\\\\wsl.localhost\\Ubuntu\\home\\anand\\projects\\logops\\sample_logs\\apache",
+      "filesProcessed": [
+        {
+          "file": "access.log",
+          "fullPath": "\\\\wsl.localhost\\Ubuntu\\home\\anand\\projects\\logops\\sample_logs\\apache\\access.log",
+          "linesHarvested": 3
+        },
+        {
+          "file": "error.log",
+          "fullPath": "\\\\wsl.localhost\\Ubuntu\\home\\anand\\projects\\logops\\sample_logs\\apache\\error.log",
+          "linesHarvested": 5
+        }
+      ],
+      "totalHarvestedLines": 8
+    }
+  },
+  {
     "id": "rep_1792424092685_bad87fce",
     "createdAt": "2026-10-19T15:34:52.685Z",
     "durationMs": 34,

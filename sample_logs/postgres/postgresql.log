@@ -1,0 +1,3 @@
+2026-10-20 14:40:12.019 UTC [14820] prod_billing_db app_user_prod 10.0.12.50(44120) FATAL: remaining connection slots are reserved for non-replication superuser connections
+2026-10-20 14:40:12.891 UTC [14821] prod_billing_db app_user_prod 10.0.12.50(44122) ERROR: deadlock detected
+Process waits for ShareLock on transaction 891241. Connection string: postgresql://admin_db:SecureDbPass2026!@10.0.12.50:5432/prod_billing_db
