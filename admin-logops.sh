@@ -21,15 +21,15 @@ PKG_FILE="${LOGOPS_DIR}/server/package.json"
 REPO_URL="https://github.com/anandprabhusk/logops"
 REPO_SLUG="anandprabhusk/logops"
 
-BOLD='\033[1m'
-GREEN='\033[0;32m'
-CYAN='\033[0;36m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-MAGENTA='\033[0;35m'
-DIM='\033[2m'
+BOLD=
+GREEN=
+CYAN=
+YELLOW=
+RED=
+MAGENTA=
+DIM=
 GRAY='\033[0;90m'
-NC='\033[0m'
+NC=
 
 info()    { echo -e "${CYAN}ℹ [INFO]${NC} $*"; }
 success() { echo -e "${GREEN}✔ [SUCCESS]${NC} $*"; }
