@@ -3,8 +3,8 @@
     "id": "usr_admin",
     "username": "admin",
     "role": "administrator",
-    "salt": "e4840b26a78d07b6a03b09edb8b82cea",
-    "hash": "7f2a0409f757d0d023f28bcc358f52a98041d9b70446c96ecd9903cdd8e8f698fb2f9d428f972d62d719eb27e859de3600695fe73263d90bb3583f82a50c6a77",
-    "createdAt": "2026-10-13T18:41:54.707Z"
+    "salt": "3327ed1f3456247a6a2f1849d2758ca1",
+    "hash": "6a23829c9e3cabdcd9ad7f60fbc56574d1d7e8be8342a036d19972d868d69d15fb2c1b5623b0b95809670fee3fcd30aee708cbcda71f8b39152a69bdd25c34e8",
+    "createdAt": "2026-10-19T15:34:13.499Z"
   }
 ]

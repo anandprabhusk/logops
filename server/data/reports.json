@@ -1,5 +1,147 @@
 [
   {
+    "id": "rep_1792424092685_bad87fce",
+    "createdAt": "2026-10-19T15:34:52.685Z",
+    "durationMs": 34,
+    "executionMs": 34,
+    "sourceType": "kubernetes",
+    "rawLogLines": 1,
+    "filtrEngineStatus": "live_container",
+    "llmEngineStatus": "intelligence_simulator",
+    "diagnostic": {
+      "incidentTitle": "Kubernetes Pod CrashLoopBackOff & OOMKilled Memory Limit Reached",
+      "severity": "CRITICAL",
+      "rootCause": "Container in pod 10.244.3.44 was terminated with exit code 137 (OOMKilled). The application memory usage exceeded container resource limit (1024Mi) while serving traffic from upstream svc_checkout@finance.internal.",
+      "affectedComponents": [
+        "Pod: 10.244.3.44",
+        "Kubelet cgroup driver",
+        "Service: svc_checkout@finance.internal"
+      ],
+      "remediationSteps": [
+        "Increase container memory limit in deployment manifest from 1024Mi to 2048Mi for pod 10.244.3.44.",
+        "Inspect heap dump and memory leak traces using kubectl logs 10.244.3.44 --previous.",
+        "Check readiness probe thresholds for service svc_checkout@finance.internal to prevent cascading pod restarts.",
+        "Apply updated deployment configuration: kubectl apply -f deployment.yaml."
+      ],
+      "anomalyTimeline": [
+        {
+          "timestamp": "2026-10-19T15:34:52.651Z",
+          "event": "kubelet node-1: Pod payment-service-7f89 container checkout-worker terminated with exit code 137 (OOMKilled). Serving internal IP 10.244.3.44 port 8080 from upstream svc-account svc_checkout@finance.internal with token Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token123"
+        }
+      ]
+    },
+    "tokenLedger": [
+      {
+        "token": "[PRIVATE_IP_1]",
+        "type": "NETWORK",
+        "original": "10.244.3.44",
+        "ruleName": "Internal RFC 1918 Private IP with Port",
+        "severity": "high"
+      },
+      {
+        "token": "[EMAIL_1]",
+        "type": "PII",
+        "original": "svc_checkout@finance.internal",
+        "ruleName": "Email Address",
+        "severity": "high"
+      },
+      {
+        "token": "[AUTH_HEADER_TOKEN_1]",
+        "type": "CREDENTIALS",
+        "original": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token123",
+        "ruleName": "HTTP Authorization Header Secret",
+        "severity": "critical"
+      }
+    ],
+    "parsedMetadata": {
+      "eventType": "KUBERNETES Incident",
+      "totalLines": 1,
+      "errors": 1,
+      "warnings": 0,
+      "info": 0
+    },
+    "stages": {
+      "ingest": {
+        "totalLines": 1,
+        "errors": 1,
+        "warnings": 0,
+        "info": 0,
+        "sampleEvents": [
+          {
+            "source": "kubernetes",
+            "timestamp": "2026-10-19T15:34:52.651Z",
+            "level": "CRITICAL",
+            "type": "OOMKilled",
+            "message": "kubelet node-1: Pod payment-service-7f89 container checkout-worker terminated with exit code 137 (OOMKilled). Serving internal IP 10.244.3.44 port 8080 from upstream svc-account svc_checkout@finance.internal with token Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token123"
+          }
+        ]
+      },
+      "sanitization": {
+        "sessionId": "637da8c1-5bba-43ae-9bff-79345c08966a",
+        "redactedCount": 3,
+        "byCategory": {
+          "network": 1,
+          "pii": 1,
+          "credentials": 1
+        },
+        "sanitizedPreview": "kubelet node-1: Pod payment-service-7f89 container checkout-worker terminated with exit code 137 (OOMKilled). Serving internal IP [PRIVATE_IP_1] port 8080 from upstream svc-account [EMAIL_1] with token [AUTH_HEADER_TOKEN_1]",
+        "entities": [
+          {
+            "token": "[PRIVATE_IP_1]",
+            "type": "NETWORK",
+            "original": "10.244.3.44",
+            "ruleName": "Internal RFC 1918 Private IP with Port",
+            "severity": "high"
+          },
+          {
+            "token": "[EMAIL_1]",
+            "type": "PII",
+            "original": "svc_checkout@finance.internal",
+            "ruleName": "Email Address",
+            "severity": "high"
+          },
+          {
+            "token": "[AUTH_HEADER_TOKEN_1]",
+            "type": "CREDENTIALS",
+            "original": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token123",
+            "ruleName": "HTTP Authorization Header Secret",
+            "severity": "critical"
+          }
+        ]
+      },
+      "llmInference": {
+        "model": "deepseek-r1",
+        "promptLength": 223,
+        "rawSurrogateOutput": "{\n  \"incidentTitle\": \"Kubernetes Pod CrashLoopBackOff & OOMKilled Memory Limit Reached\",\n  \"severity\": \"CRITICAL\",\n  \"rootCause\": \"Container in pod [PRIVATE_IP_1] was terminated with exit code 137 (OOMKilled). The application memory usage exceeded container resource limit (1024Mi) while serving traffic from upstream [EMAIL_1].\",\n  \"affectedComponents\": [\n    \"Pod: [PRIVATE_IP_1]\",\n    \"Kubelet cgroup driver\",\n    \"Service: [EMAIL_1]\"\n  ],\n  \"remediationSteps\": [\n    \"Increase container memory limit in deployment manifest from 1024Mi to 2048Mi for pod [PRIVATE_IP_1].\",\n    \"Inspect heap dump and memory leak traces using kubectl logs [PRIVATE_IP_1] --previous.\",\n    \"Check readiness probe thresholds for service [EMAIL_1] to prevent cascading pod restarts.\",\n    \"Apply updated deployment configuration: kubectl apply -f deployment.yaml.\"\n  ],\n  \"anomalyTimeline\": [\n    {\n      \"timestamp\": \"2026-10-19T15:34:52.651Z\",\n      \"event\": \"kubelet node-1: Pod payment-service-7f89 container checkout-worker terminated with exit code 137 (OOMKilled). Serving internal IP 10.244.3.44 port 8080 from upstream svc-account svc_checkout@finance.internal with token Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token123\"\n    }\n  ]\n}"
+      },
+      "rehydration": {
+        "tokensRestored": 7,
+        "finalReport": {
+          "incidentTitle": "Kubernetes Pod CrashLoopBackOff & OOMKilled Memory Limit Reached",
+          "severity": "CRITICAL",
+          "rootCause": "Container in pod 10.244.3.44 was terminated with exit code 137 (OOMKilled). The application memory usage exceeded container resource limit (1024Mi) while serving traffic from upstream svc_checkout@finance.internal.",
+          "affectedComponents": [
+            "Pod: 10.244.3.44",
+            "Kubelet cgroup driver",
+            "Service: svc_checkout@finance.internal"
+          ],
+          "remediationSteps": [
+            "Increase container memory limit in deployment manifest from 1024Mi to 2048Mi for pod 10.244.3.44.",
+            "Inspect heap dump and memory leak traces using kubectl logs 10.244.3.44 --previous.",
+            "Check readiness probe thresholds for service svc_checkout@finance.internal to prevent cascading pod restarts.",
+            "Apply updated deployment configuration: kubectl apply -f deployment.yaml."
+          ],
+          "anomalyTimeline": [
+            {
+              "timestamp": "2026-10-19T15:34:52.651Z",
+              "event": "kubelet node-1: Pod payment-service-7f89 container checkout-worker terminated with exit code 137 (OOMKilled). Serving internal IP 10.244.3.44 port 8080 from upstream svc-account svc_checkout@finance.internal with token Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token123"
+            }
+          ]
+        }
+      }
+    }
+  },
+  {
     "id": "rep_1792160855779_d8dbeb8a",
     "createdAt": "2026-10-16T14:27:35.779Z",
     "durationMs": 21,

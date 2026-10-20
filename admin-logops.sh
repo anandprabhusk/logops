@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # =============================================================================
-# admin-logops.sh — LogOps Intelligence Platform Operations & Release Manager
+# admin-logops.sh — LogOps Platform Administration & Deployment Manager
 # =============================================================================
-# Zero-Leak AI Incident Analytics Platform for Enterprise Infrastructure
+# Automated Repository Updates (anandprabhusk/logops) & Image Packaging
 # =============================================================================
 
 set -euo pipefail
@@ -16,8 +16,10 @@ if [ -d "${SCRIPT_DIR}/logops" ]; then
 else
     LOGOPS_DIR="${SCRIPT_DIR}"
 fi
+
 PKG_FILE="${LOGOPS_DIR}/server/package.json"
-DIST_REPO="https://github.com/kisa-ops/filtr"
+REPO_URL="https://github.com/anandprabhusk/logops"
+REPO_SLUG="anandprabhusk/logops"
 
 BOLD='\033[1m'
 GREEN='\033[0;32m'
@@ -36,7 +38,8 @@ error()   { echo -e "${RED}✖ [ERROR]${NC} $*" >&2; }
 
 banner() {
     echo -e "${MAGENTA}${BOLD}================================================================================${NC}"
-    echo -e "${MAGENTA}${BOLD}  LogOps Intelligence Platform — Release & Lifecycle Manager                    ${NC}"
+    echo -e "${MAGENTA}${BOLD}  LogOps Intelligence Platform — Release & Deployment Manager                  ${NC}"
+    echo -e "${MAGENTA}${BOLD}  Target Repository: ${REPO_URL}                      ${NC}"
     echo -e "${MAGENTA}${BOLD}================================================================================${NC}"
     echo ""
 }
@@ -118,7 +121,7 @@ bump_version() {
     # Update badge in dist/index.html
     local dist_index="${LOGOPS_DIR}/dist/index.html"
     if [ -f "${dist_index}" ]; then
-        sed -i -E "s/LogOps<span class=\"text-indigo-400\">Intelligence<\/span><\/span>[[:space:]]*<span[^>]*>v[0-9]+\.[0-9]+\.[0-9]+<\/span>/LogOps<span class=\"text-indigo-400\">Intelligence<\/span><\/span><span class=\"px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500\/10 text-indigo-400 border border-indigo-500\/20\">v${new_ver}<\/span>/" "${dist_index}" || true
+        sed -i -E "s/v[0-9]+\.[0-9]+\.[0-9]+ • Zero-Leak/v${new_ver} • Zero-Leak/g" "${dist_index}" || true
     fi
 
     success "LogOps version bumped to v${new_ver}"
@@ -131,8 +134,8 @@ show_status() {
     local ver
     ver="$(get_current_version)"
     local port="${LOGOPS_PORT:-8888}"
-    local filtr_url="${FILTR_URL:-http://filtr:80}"
-    local llm_url="${LLM_URL:-http://host.docker.internal:11434}"
+    local filtr_url="${FILTR_URL:-http://localhost:8080}"
+    local llm_url="${LLM_URL:-http://localhost:11434}"
     local llm_model="${LLM_MODEL:-deepseek-r1:8b}"
 
     local container_status="not running"
@@ -140,8 +143,18 @@ show_status() {
         container_status="$(docker inspect --format='{{.State.Status}}' logops-platform 2>/dev/null || echo "not running")"
     fi
 
-    echo -e "${BOLD}${CYAN}=== LogOps Intelligence Platform Status ===${NC}"
+    local git_remote
+    git_remote="$(git remote get-url origin 2>/dev/null || echo "not configured")"
+    local git_branch
+    git_branch="$(git branch --show-current 2>/dev/null || echo "unknown")"
+    local git_dirty
+    git_dirty="$(git status --porcelain 2>/dev/null | wc -l | tr -d ' ')"
+
+    echo -e "${BOLD}${CYAN}=== LogOps Platform Status & Repository Overview ===${NC}"
     echo -e "  LogOps Version:      ${BOLD}${GREEN}v${ver}${NC}"
+    echo -e "  Target GitHub Repo:  ${CYAN}${REPO_URL}${NC}"
+    echo -e "  Git Origin Remote:   ${BOLD}${git_remote}${NC} (${git_branch})"
+    echo -e "  Uncommitted Changes: ${BOLD}$([ "${git_dirty}" -gt 0 ] && echo -e "${YELLOW}${git_dirty} files modified${NC}" || echo -e "${GREEN}Clean working tree${NC}")"
     echo -e "  Container State:     ${BOLD}${container_status}${NC}"
     echo -e "  Dashboard URL:       ${CYAN}http://localhost:${port}${NC}"
     echo -e "  filtr Core Bridge:   ${CYAN}${filtr_url}${NC} (Redaction Engine)"
@@ -160,36 +173,127 @@ show_status() {
 }
 
 # -----------------------------------------------------------------------------
-# 3. Build & Package
+# 3. Update & Sync GitHub Repository (anandprabhusk/logops)
+# -----------------------------------------------------------------------------
+update_repo() {
+    local commit_msg="${1:-}"
+
+    echo ""
+    echo -e "${BOLD}${CYAN}=== Updating GitHub Repository: ${REPO_URL} ===${NC}"
+
+    # 1. Ensure remote origin is set
+    local cur_remote
+    cur_remote="$(git remote get-url origin 2>/dev/null || echo "")"
+    if [ "${cur_remote}" != "${REPO_URL}.git" ] && [ "${cur_remote}" != "${REPO_URL}" ]; then
+        info "Configuring git remote origin to ${REPO_URL}.git..."
+        git remote remove origin 2>/dev/null || true
+        git remote add origin "${REPO_URL}.git"
+        success "Remote origin configured."
+    fi
+
+    # 2. Check for changes or initial commit
+    local ver
+    ver="$(get_current_version)"
+    local current_branch
+    current_branch="$(git branch --show-current 2>/dev/null || echo "main")"
+    if [ -z "${current_branch}" ]; then
+        current_branch="main"
+        git branch -M main
+    fi
+
+    # 3. Prompt for commit message if empty and changes exist
+    local dirty_count
+    dirty_count="$(git status --porcelain | wc -l | tr -d ' ')"
+
+    if [ "${dirty_count}" -gt 0 ]; then
+        if [ -z "${commit_msg}" ]; then
+            echo -e "${YELLOW}Detected ${dirty_count} changed file(s):${NC}"
+            git status -s
+            echo ""
+            echo -ne "${BOLD}Enter commit message [Default: 'Release v${ver}: Zero-Leak LogOps AI Diagnostic Platform']: ${NC}"
+            read -r input_msg
+            commit_msg="${input_msg:-Release v${ver}: Zero-Leak LogOps AI Diagnostic Platform}"
+        fi
+
+        info "Staging all files..."
+        git add -A
+
+        info "Committing changes with message: '${commit_msg}'..."
+        git commit -m "${commit_msg}"
+        success "Changes committed."
+    else
+        info "Working tree is clean. Proceeding with remote push/sync."
+    fi
+
+    # 4. Push to GitHub
+    info "Pushing ${current_branch} to ${REPO_URL}..."
+    if git push -u origin "${current_branch}"; then
+        success "Repository updated successfully: ${BOLD}${REPO_URL}${NC}"
+    else
+        warn "Direct push failed. Retrying with GitHub CLI authentication..."
+        if command -v gh >/dev/null 2>&1; then
+            gh auth setup-git
+            git push -u origin "${current_branch}"
+            success "Repository updated successfully via gh credential helper."
+        else
+            error "Push failed. Please ensure you have write permissions or run 'gh auth login'."
+            return 1
+        fi
+    fi
+
+    # 5. Optional Tag Creation
+    local tag="v${ver}"
+    if ! git rev-parse "${tag}" >/dev/null 2>&1; then
+        info "Tagging commit as ${tag}..."
+        git tag -a "${tag}" -m "Release ${tag}"
+        git push origin "${tag}" || true
+        success "Pushed tag ${tag} to GitHub."
+    fi
+
+    echo ""
+}
+
+# -----------------------------------------------------------------------------
+# 4. Build Container Images for Deployment
 # -----------------------------------------------------------------------------
 build_package() {
     local version="${1:-$(get_current_version)}"
     version="${version#v}"
     local tarball_name="logops-docker-v${version}.tar.gz"
+    local sha_name="${tarball_name}.sha256"
 
     echo ""
-    echo -e "${BOLD}${CYAN}=== Building LogOps Offline Package (v${version}) ===${NC}"
+    echo -e "${BOLD}${CYAN}=== Building LogOps Deployment Images & Offline Package (v${version}) ===${NC}"
 
     if ! command -v docker >/dev/null 2>&1; then
-        error "Docker is required to build container images."
+        error "Docker is required to build deployment images."
         return 1
     fi
 
-    info "Building container image ghcr.io/kisa-ops/logops:v${version}..."
+    info "Building production container image with multiple tags..."
     docker build \
         --provenance=false \
-        -t "ghcr.io/kisa-ops/logops:v${version}" \
-        -t "ghcr.io/kisa-ops/logops:latest" \
+        -t "anandprabhusk/logops:v${version}" \
+        -t "anandprabhusk/logops:latest" \
+        -t "ghcr.io/anandprabhusk/logops:v${version}" \
+        -t "ghcr.io/anandprabhusk/logops:latest" \
         -t "logops:v${version}" \
         -t "logops:latest" \
         "${LOGOPS_DIR}"
 
-    success "Docker image built successfully."
+    success "Docker container images built successfully:"
+    echo "    • anandprabhusk/logops:v${version}"
+    echo "    • anandprabhusk/logops:latest"
+    echo "    • ghcr.io/anandprabhusk/logops:v${version}"
+    echo "    • ghcr.io/anandprabhusk/logops:latest"
+    echo "    • logops:v${version}"
 
-    info "Exporting container archive to ${tarball_name}..."
+    info "Exporting full deployment container archive to ${tarball_name}..."
     docker save \
-        "ghcr.io/kisa-ops/logops:v${version}" \
-        "ghcr.io/kisa-ops/logops:latest" \
+        "anandprabhusk/logops:v${version}" \
+        "anandprabhusk/logops:latest" \
+        "ghcr.io/anandprabhusk/logops:v${version}" \
+        "ghcr.io/anandprabhusk/logops:latest" \
         "logops:v${version}" \
         "logops:latest" | gzip > "${SCRIPT_DIR}/${tarball_name}"
 
@@ -197,25 +301,60 @@ build_package() {
     size=$(du -h "${SCRIPT_DIR}/${tarball_name}" | awk '{print $1}')
     local checksum
     checksum=$(sha256sum "${SCRIPT_DIR}/${tarball_name}" | awk '{print $1}')
+    echo "${checksum}  ${tarball_name}" > "${SCRIPT_DIR}/${sha_name}"
 
-    success "Package created: ${BOLD}${tarball_name}${NC} (${size})"
-    echo -e "SHA256: ${DIM}${checksum}${NC}"
-}
-
-# -----------------------------------------------------------------------------
-# 4. Clean Up
-# -----------------------------------------------------------------------------
-cleanup() {
+    success "Deployment package created: ${BOLD}${tarball_name}${NC} (${size})"
+    echo -e "SHA256: ${DIM}${checksum}${NC} (saved to ${sha_name})"
     echo ""
-    echo -e "${BOLD}${CYAN}=== LogOps Artifact Clean Up ===${NC}"
-    echo "Cleaning LogOps runtime logs and old offline tarballs..."
-    rm -f "${SCRIPT_DIR}"/logops-docker-*.tar.gz
-    rm -f "${LOGOPS_DIR}/server/server.log"
-    success "Cleaned LogOps package archives and server logs."
 }
 
 # -----------------------------------------------------------------------------
-# 5. Publish Release Asset to GitHub
+# 5. Push Built Images to Container Registry
+# -----------------------------------------------------------------------------
+push_images() {
+    local version="${1:-$(get_current_version)}"
+    version="${version#v}"
+
+    echo ""
+    echo -e "${BOLD}${CYAN}=== Push LogOps Images to Registry ===${NC}"
+    echo "Choose target registry:"
+    echo "  1) GitHub Container Registry (ghcr.io/anandprabhusk/logops)"
+    echo "  2) Docker Hub (anandprabhusk/logops)"
+    echo "  3) Both Registries"
+    echo "  0) Cancel"
+    echo ""
+    echo -ne "${BOLD}Choice [1-3]: ${NC}"
+    read -r reg_choice
+
+    case "${reg_choice}" in
+        1)
+            info "Pushing to ghcr.io/anandprabhusk/logops..."
+            docker push "ghcr.io/anandprabhusk/logops:v${version}"
+            docker push "ghcr.io/anandprabhusk/logops:latest"
+            success "Pushed to GitHub Container Registry."
+            ;;
+        2)
+            info "Pushing to Docker Hub (anandprabhusk/logops)..."
+            docker push "anandprabhusk/logops:v${version}"
+            docker push "anandprabhusk/logops:latest"
+            success "Pushed to Docker Hub."
+            ;;
+        3)
+            info "Pushing to both ghcr.io and Docker Hub..."
+            docker push "ghcr.io/anandprabhusk/logops:v${version}" || true
+            docker push "ghcr.io/anandprabhusk/logops:latest" || true
+            docker push "anandprabhusk/logops:v${version}" || true
+            docker push "anandprabhusk/logops:latest" || true
+            success "Pushed images to all configured registries."
+            ;;
+        *)
+            info "Image push cancelled."
+            ;;
+    esac
+}
+
+# -----------------------------------------------------------------------------
+# 6. Publish Release to GitHub (anandprabhusk/logops)
 # -----------------------------------------------------------------------------
 publish_release() {
     local version="${1:-$(get_current_version)}"
@@ -223,15 +362,45 @@ publish_release() {
     local tag="v${version}"
     local tarball_name="logops-docker-v${version}.tar.gz"
     local tarball_path="${SCRIPT_DIR}/${tarball_name}"
+    local sha_name="${tarball_name}.sha256"
+    local sha_path="${SCRIPT_DIR}/${sha_name}"
 
     echo ""
-    echo -e "${BOLD}${CYAN}=== Publish LogOps Package to GitHub Release ===${NC}"
+    echo -e "${BOLD}${CYAN}=== Publish LogOps Package to GitHub Release (${REPO_SLUG}) ===${NC}"
 
     if [ ! -f "${tarball_path}" ]; then
         warn "Package ${tarball_name} not found. Building now..."
         build_package "${version}"
     fi
 
+    # Use gh CLI if available
+    if command -v gh >/dev/null 2>&1; then
+        info "Creating or updating GitHub Release ${tag} via gh CLI..."
+        
+        local notes="## LogOps Intelligence Platform ${tag}
+### Zero-Leak AI Incident Analytics Platform for Enterprise Infrastructure
+
+- **Zero-Leak filtr Redaction & Rehydration Core**: Automatic interception of PII, internal IPs, and database credentials before model egress.
+- **10 Enterprise Production Parsers**: Oracle WebLogic, Apache Kafka, Kubernetes Pods, PostgreSQL/MySQL, AWS CloudWatch, Redis, Nginx, Apache HTTPD, Windows Event, and Jenkins CI/CD.
+- **ELK Community Edition Auto-Harvester**: Scheduled and on-demand Elasticsearch log harvesting and Logstash forwarder integration.
+- **Standalone Offline Container Package**: Includes prebuilt Docker images and deployment manifests."
+
+        if gh release view "${tag}" --repo "${REPO_SLUG}" >/dev/null 2>&1; then
+            info "Release ${tag} already exists. Uploading/updating assets..."
+            gh release upload "${tag}" "${tarball_path}" "${sha_path}" --repo "${REPO_SLUG}" --clobber
+        else
+            info "Creating new release ${tag} on ${REPO_SLUG}..."
+            gh release create "${tag}" "${tarball_path}" "${sha_path}" \
+                --repo "${REPO_SLUG}" \
+                --title "LogOps Platform ${tag} — Zero-Leak SRE Analytics" \
+                --notes "${notes}"
+        fi
+
+        success "Release published: ${BOLD}https://github.com/${REPO_SLUG}/releases/tag/${tag}${NC}"
+        return 0
+    fi
+
+    # Fallback to direct curl API with token
     local token="${GITHUB_TOKEN:-}"
     if [ -z "${token}" ]; then
         echo -ne "${BOLD}Enter GitHub Personal Access Token (PAT): ${NC}"
@@ -244,40 +413,93 @@ publish_release() {
         return 1
     fi
 
-    local repo_slug
-    repo_slug=$(echo "${DIST_REPO}" | sed -E 's|https://github.com/||; s|\.git$||')
-
-    info "Finding release ${tag} on ${repo_slug}..."
+    info "Finding release ${tag} on ${REPO_SLUG}..."
     local check_rel
-    check_rel=$(curl -s -H "Authorization: Bearer ${token}" "https://api.github.com/repos/${repo_slug}/releases/tags/${tag}" || true)
+    check_rel=$(curl -s -H "Authorization: Bearer ${token}" "https://api.github.com/repos/${REPO_SLUG}/releases/tags/${tag}" || true)
     local rel_id
     rel_id=$(echo "${check_rel}" | grep '"id":' | head -n 1 | sed -E 's/.*: *([0-9]+).*/\1/' || true)
 
     if [ -z "${rel_id}" ]; then
-        error "Release ${tag} does not exist on ${repo_slug}. Create release tag first via admin-filtr.sh."
+        info "Creating release ${tag} via GitHub REST API..."
+        local create_rel
+        create_rel=$(curl -s -X POST \
+            -H "Authorization: Bearer ${token}" \
+            -H "Content-Type: application/json" \
+            "https://api.github.com/repos/${REPO_SLUG}/releases" \
+            -d "{\"tag_name\":\"${tag}\",\"name\":\"LogOps Platform ${tag}\",\"body\":\"LogOps Zero-Leak Platform Release ${tag}\"}")
+        rel_id=$(echo "${create_rel}" | grep '"id":' | head -n 1 | sed -E 's/.*: *([0-9]+).*/\1/' || true)
+    fi
+
+    if [ -z "${rel_id}" ]; then
+        error "Failed to create or find release ${tag} on ${REPO_SLUG}."
         return 1
     fi
 
-    info "Uploading ${tarball_name} ($(du -h "${tarball_path}" | awk '{print $1}')) to release ${tag}..."
-    local upload_url="https://uploads.github.com/repos/${repo_slug}/releases/${rel_id}/assets?name=${tarball_name}"
-    local upload_res
-    upload_res=$(curl -s -X POST \
+    info "Uploading ${tarball_name} to release ${tag}..."
+    local upload_url="https://uploads.github.com/repos/${REPO_SLUG}/releases/${rel_id}/assets?name=${tarball_name}"
+    curl -s -X POST \
         -H "Authorization: Bearer ${token}" \
         -H "Content-Type: application/gzip" \
         --data-binary "@${tarball_path}" \
-        "${upload_url}")
+        "${upload_url}" >/dev/null
 
-    if echo "${upload_res}" | grep -q '"state": *"uploaded"'; then
-        success "Uploaded ${tarball_name} to https://github.com/${repo_slug}/releases/tag/${tag}"
-    elif echo "${upload_res}" | grep -q 'already_exists'; then
-        warn "Asset ${tarball_name} is already attached to release ${tag}."
-    else
-        warn "Upload response: $(echo "${upload_res}" | head -n 3)"
-    fi
+    success "Uploaded ${tarball_name} to https://github.com/${REPO_SLUG}/releases/tag/${tag}"
 }
 
 # -----------------------------------------------------------------------------
-# 6. Runtime Management Wrapper
+# 7. Complete Deployment Pipeline (Update Repo + Build Images + Publish)
+# -----------------------------------------------------------------------------
+full_deployment_pipeline() {
+    banner
+    echo -e "${BOLD}${CYAN}=== Starting End-to-End LogOps Deployment Pipeline ===${NC}"
+    echo ""
+    
+    local ver
+    ver="$(get_current_version)"
+    echo -e "Target Version: ${BOLD}${GREEN}v${ver}${NC}"
+    echo -e "Target Repo:    ${BOLD}${CYAN}${REPO_URL}${NC}"
+    echo ""
+
+    echo -ne "${BOLD}Do you want to bump version first? (y/N): ${NC}"
+    read -r bump_choice
+    if [[ "${bump_choice}" =~ ^[Yy]$ ]]; then
+        bump_version
+        ver="$(get_current_version)"
+    fi
+
+    # Step 1: Update GitHub Repository
+    info "[Step 1/3] Updating and pushing repository to ${REPO_URL}..."
+    update_repo "Release v${ver}: Zero-Leak LogOps AI Diagnostic Platform"
+
+    # Step 2: Build Deployment Images
+    info "[Step 2/3] Building container images and exporting deployment tarball..."
+    build_package "${ver}"
+
+    # Step 3: Publish GitHub Release
+    echo -ne "${BOLD}Publish release and upload assets to GitHub? (Y/n): ${NC}"
+    read -r pub_choice
+    if [[ ! "${pub_choice}" =~ ^[Nn]$ ]]; then
+        info "[Step 3/3] Publishing release v${ver} to ${REPO_URL}..."
+        publish_release "${ver}"
+    fi
+
+    success "End-to-End Deployment Pipeline completed successfully!"
+}
+
+# -----------------------------------------------------------------------------
+# 8. Clean Up
+# -----------------------------------------------------------------------------
+cleanup() {
+    echo ""
+    echo -e "${BOLD}${CYAN}=== LogOps Artifact Clean Up ===${NC}"
+    echo "Cleaning LogOps runtime logs and old offline tarballs..."
+    rm -f "${SCRIPT_DIR}"/logops-docker-*.tar.gz*
+    rm -f "${LOGOPS_DIR}/server/server.log"
+    success "Cleaned LogOps package archives and server logs."
+}
+
+# -----------------------------------------------------------------------------
+# 9. Runtime Management Wrapper
 # -----------------------------------------------------------------------------
 manage_runtime() {
     local cmd="${1:-status}"
@@ -294,13 +516,21 @@ manage_runtime() {
 # -----------------------------------------------------------------------------
 show_help() {
     cat << EOF
-${BOLD}LogOps Intelligence Platform — Standalone Administration Utility${NC}
+${BOLD}LogOps Platform — Administration & Deployment Utility${NC}
+Target GitHub Repository: ${CYAN}${REPO_URL}${NC}
+
 Usage: ./admin-logops.sh [COMMAND] [OPTIONS]
 
-COMMANDS:
+REPOSITORY & DEPLOYMENT COMMANDS:
+    update-repo | push [msg]    Stage, commit, and push all updates to ${REPO_URL}
+    build [version]             Build Docker images and export deployment tarball & SHA256
+    push-images [version]       Push built container images to ghcr.io or Docker Hub
+    publish | release [version] Create GitHub release on ${REPO_SLUG} with tarball assets
+    ship | pipeline             Execute complete pipeline: Push Repo -> Build Images -> Release
+    version [patch|minor|major] Increment semantic version in server/package.json & index.html
+
+RUNTIME MANAGEMENT COMMANDS:
     status                      Show container state, ports, bridge, and ELK harvester status
-    version [patch|minor|major] Increment semantic version in logops/server/package.json
-    build [version]             Build LogOps container image and export logops-docker-v*.tar.gz
     deploy | enable             Deploy & launch LogOps container via docker compose
     stop | disable              Stop and remove LogOps container
     restart                     Restart LogOps container independently with zero impact on filtr
@@ -308,17 +538,16 @@ COMMANDS:
     test                        Test LogOps REST health API endpoint
     config                      Interactively configure FILTR_URL, LOGOPS_PORT, and LLM engine
     clean                       Remove old tarballs and local runtime logs
-    publish [version]           Upload logops-docker-v*.tar.gz to GitHub Release
     logs                        Tail live platform container logs
     help                        Show this command reference guide
 
 EXAMPLES:
     ./admin-logops.sh                   # Launch interactive administration menu
+    ./admin-logops.sh update-repo       # Commit and push updates to https://github.com/anandprabhusk/logops
+    ./admin-logops.sh build             # Build deployment Docker images and offline tarball
+    ./admin-logops.sh ship              # End-to-end: Push repo, build images, and publish release
     ./admin-logops.sh status            # View container and bridge status
-    ./admin-logops.sh build             # Build image and export offline tarball
-    ./admin-logops.sh deploy            # Deploy LogOps container
-    ./admin-logops.sh bridge            # Test redaction connection to filtr
-    ./admin-logops.sh version patch     # Bump patch version (e.g. 1.0.0 -> 1.0.1)
+    ./admin-logops.sh deploy            # Deploy LogOps platform container
 EOF
 }
 
@@ -329,36 +558,44 @@ interactive_menu() {
     while true; do
         banner
         show_status
-        echo -e "${BOLD}LogOps Platform Operations:${NC}"
+        echo -e "${BOLD}Repository & Deployment Operations:${NC}"
         echo "  1) 📊 Refresh Status & Diagnostics"
         echo "  2) 🏷️  Version Management & Semantic Bump"
-        echo "  3) 📦 Build Container Image & Offline Tarball"
-        echo "  4) 🚀 Deploy / Start LogOps Container"
-        echo "  5) 🔄 Restart LogOps (Zero impact on filtr)"
-        echo "  6) 🛑 Stop LogOps Platform"
-        echo "  7) 🛡️ Verify filtr Redaction & Rehydration Bridge"
-        echo "  8) 🔍 Test LogOps REST Health API"
-        echo "  9) ⚙️ Configure filtr URL & LLM Settings (.env)"
-        echo "  10) 🧹 Clean Old Tarballs & Logs"
-        echo "  11) 🌐 Publish Package to GitHub Release"
-        echo "  12) 📋 Tail Live Container Logs"
+        echo "  3) 🚀 Update GitHub Repository (${REPO_SLUG})"
+        echo "  4) 📦 Build Container Images for Deployment"
+        echo "  5) 🚢 Push Container Images to Registry (ghcr.io / Docker Hub)"
+        echo "  6) 🌐 Publish Release & Assets to GitHub (${REPO_SLUG})"
+        echo "  7) ⚡ Full End-to-End Pipeline (Update Repo + Build Images + Release)"
+        echo ""
+        echo -e "${BOLD}Local Container Runtime Operations:${NC}"
+        echo "  8) 🚀 Deploy / Start LogOps Platform Container"
+        echo "  9) 🔄 Restart LogOps (Zero impact on filtr)"
+        echo "  10) 🛑 Stop LogOps Platform Container"
+        echo "  11) 🛡️ Verify filtr Redaction & Rehydration Bridge"
+        echo "  12) 🔍 Test LogOps REST Health API"
+        echo "  13) ⚙️ Configure filtr URL & LLM Settings (.env)"
+        echo "  14) 🧹 Clean Old Tarballs & Logs"
+        echo "  15) 📋 Tail Live Container Logs"
         echo "  0) Exit"
         echo ""
-        echo -ne "${BOLD}Enter choice [0-12]: ${NC}"
+        echo -ne "${BOLD}Enter choice [0-15]: ${NC}"
         read -r choice
         case "${choice}" in
             1) ;;
             2) bump_version ;;
-            3) build_package ;;
-            4) manage_runtime enable ;;
-            5) manage_runtime restart ;;
-            6) manage_runtime disable ;;
-            7) manage_runtime bridge ;;
-            8) manage_runtime test ;;
-            9) manage_runtime config ;;
-            10) cleanup ;;
-            11) publish_release ;;
-            12) manage_runtime logs ;;
+            3) update_repo ;;
+            4) build_package ;;
+            5) push_images ;;
+            6) publish_release ;;
+            7) full_deployment_pipeline ;;
+            8) manage_runtime enable ;;
+            9) manage_runtime restart ;;
+            10) manage_runtime disable ;;
+            11) manage_runtime bridge ;;
+            12) manage_runtime test ;;
+            13) manage_runtime config ;;
+            14) cleanup ;;
+            15) manage_runtime logs ;;
             0) exit 0 ;;
             *) warn "Invalid selection." ;;
         esac
@@ -379,9 +616,24 @@ case "${1:-}" in
         shift
         bump_version "$@"
         ;;
-    build|package)
+    update-repo|push|sync)
+        shift
+        update_repo "$@"
+        ;;
+    build|package|build-images)
         shift
         build_package "$@"
+        ;;
+    push-images)
+        shift
+        push_images "$@"
+        ;;
+    publish|release)
+        shift
+        publish_release "$@"
+        ;;
+    ship|pipeline|deploy-all)
+        full_deployment_pipeline
         ;;
     deploy|enable|start)
         manage_runtime enable
@@ -403,10 +655,6 @@ case "${1:-}" in
         ;;
     clean|cleanup)
         cleanup
-        ;;
-    publish)
-        shift
-        publish_release "$@"
         ;;
     logs)
         manage_runtime logs

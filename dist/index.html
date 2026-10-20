@@ -3,30 +3,35 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LogOps Intelligence | Zero-Leak AI Incident Analytics</title>
+  <title>LogOps Intelligence | Zero-Leak AI Incident Analytics Platform</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f1f5f9; }
-    .glass-card { background: rgba(17, 24, 39, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
-    .glass-card-hover:hover { border-color: rgba(99, 102, 241, 0.4); box-shadow: 0 8px 30px rgba(99, 102, 241, 0.12); }
+    body { font-family: 'Inter', sans-serif; background-color: #080d1a; color: #f1f5f9; }
+    .glass-card { background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(16px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glass-card-hover:hover { border-color: rgba(99, 102, 241, 0.4); box-shadow: 0 8px 30px rgba(99, 102, 241, 0.15); }
     pre, code { font-family: 'JetBrains Mono', monospace; }
     .stage-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
-    .stage-card.active { border-color: #6366f1; box-shadow: 0 0 25px rgba(99, 102, 241, 0.25); }
-    .stage-card.completed { border-color: #10b981; }
+    .stage-card.active { border-color: #6366f1; box-shadow: 0 0 25px rgba(99, 102, 241, 0.3); transform: translateY(-2px); }
+    .stage-card.completed { border-color: #10b981; background: rgba(16, 185, 129, 0.05); }
     ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #0b0f19; }
+    ::-webkit-scrollbar-track { background: #080d1a; }
     ::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    @keyframes pulse-glow {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 0.3; }
+    }
+    .pulse-glow { animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
   </style>
 </head>
 <body class="min-h-screen flex flex-col antialiased selection:bg-indigo-500 selection:text-white">
 
   <!-- Header -->
-  <header class="sticky top-0 z-50 glass-card border-b border-slate-800 bg-slate-950/80 backdrop-blur-md">
+  <header class="sticky top-0 z-50 glass-card border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div class="flex items-center gap-3">
         <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-purple-500 p-0.5 shadow-lg shadow-indigo-500/20 flex items-center justify-center">
@@ -36,25 +41,28 @@
         </div>
         <div>
           <div class="flex items-center gap-2">
-            <span class="text-base font-bold tracking-tight text-white">LogOps<span class="text-indigo-400">Intelligence</span></span>
-            <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v1.0</span>
+            <span class="text-base font-extrabold tracking-tight text-white">LogOps<span class="text-indigo-400">Intelligence</span></span>
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">v2.0 • Zero-Leak</span>
           </div>
-          <p class="text-[11px] text-slate-400">Zero-Leak AI Diagnostic Pipeline for Enterprise Logs</p>
+          <p class="text-[11px] text-slate-400 font-medium">Enterprise Log Ingestion, filtr Redaction & Rehydration</p>
         </div>
       </div>
 
-      <nav id="nav-tabs" class="hidden md:flex items-center gap-1 bg-slate-900/60 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
+      <nav id="nav-tabs" class="hidden lg:flex items-center gap-1 bg-slate-900/80 p-1 rounded-xl border border-slate-800 text-xs font-semibold">
         <button onclick="switchTab('pipeline')" id="tab-btn-pipeline" class="px-3.5 py-1.5 rounded-lg text-white bg-indigo-600 transition-all flex items-center gap-2">
           <i data-lucide="play-circle" class="w-3.5 h-3.5"></i> Pipeline Runner
         </button>
         <button onclick="switchTab('reports')" id="tab-btn-reports" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2">
           <i data-lucide="file-text" class="w-3.5 h-3.5"></i> Incident Reports <span id="nav-report-badge" class="px-1.5 py-0.5 rounded-full bg-slate-800 text-[10px]">0</span>
         </button>
+        <button onclick="switchTab('diff')" id="tab-btn-diff" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2">
+          <i data-lucide="split" class="w-3.5 h-3.5 text-cyan-400"></i> Zero-Leak Diff
+        </button>
         <button onclick="switchTab('elk')" id="tab-btn-elk" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2">
-          <i data-lucide="database" class="w-3.5 h-3.5 text-amber-400"></i> ELK Pipeline <span id="nav-elk-badge" class="px-1.5 py-0.5 rounded-full bg-slate-800 text-[10px] text-amber-400">Idle</span>
+          <i data-lucide="database" class="w-3.5 h-3.5 text-amber-400"></i> ELK Harvester
         </button>
         <button onclick="switchTab('connectors')" id="tab-btn-connectors" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2">
-          <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Source Connectors & Keys
+          <i data-lucide="cpu" class="w-3.5 h-3.5"></i> Shippers & Keys
         </button>
         <button onclick="switchTab('architecture')" id="tab-btn-architecture" class="px-3.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-all flex items-center gap-2">
           <i data-lucide="network" class="w-3.5 h-3.5"></i> Architecture
@@ -63,17 +71,17 @@
 
       <div class="flex items-center gap-3">
         <div id="status-pills" class="hidden sm:flex items-center gap-2">
-          <span class="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+          <span id="pill-filtr" class="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
             <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> filtr: Live
           </span>
-          <span class="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-            <i data-lucide="sparkles" class="w-3 h-3"></i> Local LLM: Ready
+          <span id="pill-llm" class="flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+            <i data-lucide="sparkles" class="w-3 h-3"></i> Local AI: Ready
           </span>
         </div>
         <div id="user-profile" class="hidden items-center gap-2 pl-2 border-l border-slate-800">
           <div class="text-right">
             <div id="user-name" class="text-xs font-semibold text-white">admin</div>
-            <div class="text-[10px] text-slate-400">Enterprise SRE</div>
+            <div class="text-[10px] text-slate-400">Lead SRE</div>
           </div>
           <button onclick="logout()" class="p-2 rounded-lg bg-slate-800/60 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 transition-colors" title="Sign Out">
             <i data-lucide="log-out" class="w-4 h-4"></i>
@@ -91,44 +99,36 @@
         <div class="w-14 h-14 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center mx-auto mb-4 text-indigo-400">
           <i data-lucide="lock" class="w-7 h-7"></i>
         </div>
-        <h2 class="text-2xl font-bold text-white tracking-tight">Enterprise Access</h2>
-        <p class="text-sm text-slate-400 mt-1">Authenticate to access sanitized LLM telemetry & diagnosis</p>
+        <h2 class="text-2xl font-bold text-white tracking-tight">Enterprise SRE Access</h2>
+        <p class="text-xs text-slate-400 mt-1">Authenticate to access zero-leak log diagnostics & telemetry</p>
       </div>
 
       <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1.5">Username</label>
-          <div class="relative">
-            <i data-lucide="user" class="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-            <input type="text" id="login-username" value="admin" required
-              class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">
-          </div>
+          <input type="text" id="login-username" value="admin" required
+            class="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
         </div>
-
         <div>
           <label class="block text-xs font-semibold text-slate-300 mb-1.5">Password</label>
-          <div class="relative">
-            <i data-lucide="key" class="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
-            <input type="password" id="login-password" value="LogOps2026!" required
-              class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl px-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition-all">
-          </div>
+          <input type="password" id="login-password" value="LogOps2026!" required
+            class="w-full bg-slate-950/90 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500" />
         </div>
 
-        <div id="login-error" class="hidden text-xs text-rose-400 bg-rose-500/10 border border-rose-500/20 rounded-lg p-2.5 flex items-center gap-2">
+        <div id="login-error" class="hidden p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-xs text-rose-400 flex items-center gap-2">
           <i data-lucide="alert-circle" class="w-4 h-4 shrink-0"></i>
-          <span id="login-error-text">Invalid credentials</span>
+          <span id="login-error-text">Authentication failed</span>
         </div>
 
-        <button type="submit" id="login-btn"
-          class="w-full mt-2 py-3 px-4 bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 text-white font-semibold rounded-xl text-sm shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2 transition-all">
-          <span>Authenticate & Open Console</span>
+        <button type="submit"
+          class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition-all shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2">
+          <span>Sign In to Platform</span>
           <i data-lucide="arrow-right" class="w-4 h-4"></i>
         </button>
 
-        <div class="mt-6 pt-6 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
-          <span>Default: <code class="text-indigo-400 bg-indigo-950/40 px-1 py-0.5 rounded">admin</code> / <code class="text-indigo-400 bg-indigo-950/40 px-1 py-0.5 rounded">LogOps2026!</code></span>
-          <span class="flex items-center gap-1 text-emerald-400"><i data-lucide="shield-check" class="w-3 h-3"></i> PBKDF2</span>
-        </div>
+        <p class="text-center text-[11px] text-slate-500 mt-3">
+          Default Credentials: <code class="text-indigo-400 font-mono">admin / LogOps2026!</code>
+        </p>
       </form>
     </div>
   </div>
@@ -138,7 +138,9 @@
 
     <!-- TAB 1: PIPELINE RUNNER -->
     <div id="view-pipeline" class="space-y-6">
-      <div class="glass-card rounded-2xl p-6 border border-slate-800">
+      
+      <!-- Top Card: Enterprise Use Case Selector & Ingestion -->
+      <div class="glass-card rounded-2xl p-6 border border-slate-800/90 shadow-xl">
         <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-5">
           <div>
             <h1 class="text-xl font-bold text-white flex items-center gap-2">
@@ -146,25 +148,50 @@
               Enterprise Log Ingestion & Zero-Leak Redactor
             </h1>
             <p class="text-xs text-slate-400 mt-1">
-              Select an enterprise source, paste or load sample logs, then execute the 4-stage Zero-Leak pipeline.
+              Select an enterprise source incident, review raw stream, then execute the 4-stage Zero-Leak pipeline.
             </p>
           </div>
 
-          <!-- Source Selectors -->
-          <div class="flex flex-wrap items-center gap-2" id="source-buttons">
-            <button onclick="selectSource('weblogic')" data-source="weblogic" class="source-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white border border-indigo-500 flex items-center gap-1.5 transition-all">
+          <div class="flex items-center gap-2">
+            <span class="text-[11px] text-slate-400 font-medium">Use Case:</span>
+            <span id="active-source-badge" class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">weblogic</span>
+          </div>
+        </div>
+
+        <!-- 10 Enterprise Source Selectors -->
+        <div class="mb-5">
+          <div class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+            <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i> Select Production Incident Use Case (1-Click Load):
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2" id="source-buttons">
+            <button onclick="selectSource('weblogic')" data-source="weblogic" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white border border-indigo-500 flex items-center gap-2 transition-all shadow-md">
               <i data-lucide="layers" class="w-3.5 h-3.5"></i> WebLogic
             </button>
-            <button onclick="selectSource('kafka')" data-source="kafka" class="source-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-1.5 transition-all">
+            <button onclick="selectSource('kafka')" data-source="kafka" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
               <i data-lucide="share-2" class="w-3.5 h-3.5"></i> Kafka
             </button>
-            <button onclick="selectSource('apache')" data-source="apache" class="source-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-1.5 transition-all">
+            <button onclick="selectSource('kubernetes')" data-source="kubernetes" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+              <i data-lucide="boxes" class="w-3.5 h-3.5 text-blue-400"></i> Kubernetes
+            </button>
+            <button onclick="selectSource('postgres')" data-source="postgres" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+              <i data-lucide="database" class="w-3.5 h-3.5 text-emerald-400"></i> PostgreSQL
+            </button>
+            <button onclick="selectSource('aws')" data-source="aws" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+              <i data-lucide="cloud" class="w-3.5 h-3.5 text-amber-400"></i> AWS Cloud
+            </button>
+            <button onclick="selectSource('redis')" data-source="redis" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+              <i data-lucide="zap" class="w-3.5 h-3.5 text-rose-400"></i> Redis Cache
+            </button>
+            <button onclick="selectSource('nginx')" data-source="nginx" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
+              <i data-lucide="shield" class="w-3.5 h-3.5 text-teal-400"></i> Nginx Proxy
+            </button>
+            <button onclick="selectSource('apache')" data-source="apache" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
               <i data-lucide="globe" class="w-3.5 h-3.5"></i> Apache
             </button>
-            <button onclick="selectSource('windows')" data-source="windows" class="source-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-1.5 transition-all">
+            <button onclick="selectSource('windows')" data-source="windows" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
               <i data-lucide="terminal" class="w-3.5 h-3.5"></i> Windows Event
             </button>
-            <button onclick="selectSource('jenkins')" data-source="jenkins" class="source-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-1.5 transition-all">
+            <button onclick="selectSource('jenkins')" data-source="jenkins" class="source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all">
               <i data-lucide="git-commit" class="w-3.5 h-3.5"></i> Jenkins CI
             </button>
           </div>
@@ -174,29 +201,29 @@
         <div class="space-y-3">
           <div class="flex items-center justify-between text-xs text-slate-400">
             <div class="flex items-center gap-2">
-              <span class="font-semibold text-slate-300">Raw Source Log Stream</span>
-              <span id="active-source-badge" class="px-2 py-0.5 rounded text-[10px] font-mono bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">weblogic</span>
+              <span class="font-semibold text-slate-300">Raw Incident Log Stream</span>
+              <span id="log-char-count" class="text-[10px] text-slate-500 font-mono">0 chars</span>
             </div>
             <div class="flex items-center gap-3">
               <button onclick="loadSampleLog()" class="text-xs font-medium text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors">
-                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Load Real Incident Sample
+                <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Reload Realistic Incident Sample
               </button>
-              <button onclick="document.getElementById('log-input').value=''" class="text-xs font-medium text-slate-500 hover:text-slate-400 transition-colors">
+              <button onclick="document.getElementById('log-input').value=''; updateCharCount();" class="text-xs font-medium text-slate-500 hover:text-slate-400 transition-colors">
                 Clear
               </button>
             </div>
           </div>
 
-          <textarea id="log-input" rows="7" placeholder="Paste enterprise log lines here..."
+          <textarea id="log-input" rows="7" placeholder="Paste enterprise log lines here..." oninput="updateCharCount()"
             class="w-full bg-slate-950/90 border border-slate-800 rounded-xl p-4 font-mono text-xs text-slate-200 placeholder-slate-600 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 leading-relaxed"></textarea>
 
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
             <div class="flex items-center gap-2 text-xs text-slate-400">
-              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400"></i>
-              <span>Guaranteed: All IPs, emails, tokens, and hostnames are tokenized in-memory before LLM egress.</span>
+              <i data-lucide="shield-check" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+              <span>Zero-Leak Guarantee: All IP addresses, users, passwords, and tokens are replaced with surrogate tokens before model egress.</span>
             </div>
             <button onclick="runPipeline()" id="run-pipeline-btn"
-              class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-xs shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all">
+              class="px-6 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 transition-all">
               <i data-lucide="play" class="w-4 h-4"></i>
               <span>Execute 4-Stage Zero-Leak Pipeline</span>
             </button>
@@ -208,7 +235,7 @@
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="stepper-cards">
         <div id="card-stage-1" class="stage-card glass-card rounded-xl p-4 border border-slate-800">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Stage 1</span>
+            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">Stage 1</span>
             <div id="icon-stage-1" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold">1</div>
           </div>
           <div class="font-semibold text-sm text-white">Ingest & Parse</div>
@@ -218,7 +245,7 @@
 
         <div id="card-stage-2" class="stage-card glass-card rounded-xl p-4 border border-slate-800">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Stage 2</span>
+            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">Stage 2</span>
             <div id="icon-stage-2" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold">2</div>
           </div>
           <div class="font-semibold text-sm text-white">filtr Redaction</div>
@@ -228,17 +255,17 @@
 
         <div id="card-stage-3" class="stage-card glass-card rounded-xl p-4 border border-slate-800">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Stage 3</span>
+            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">Stage 3</span>
             <div id="icon-stage-3" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold">3</div>
           </div>
           <div class="font-semibold text-sm text-white">Local LLM Diagnostics</div>
-          <p class="text-xs text-slate-400 mt-1" id="desc-stage-3">Zero-leak AI inference</p>
+          <p class="text-xs text-slate-400 mt-1" id="desc-stage-3">Zero-leak surrogate inference</p>
           <div id="stat-stage-3" class="text-[11px] font-mono text-indigo-400 mt-2 font-semibold">Idle</div>
         </div>
 
         <div id="card-stage-4" class="stage-card glass-card rounded-xl p-4 border border-slate-800">
           <div class="flex items-center justify-between mb-2">
-            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider">Stage 4</span>
+            <span class="text-[11px] font-mono text-slate-400 uppercase tracking-wider font-semibold">Stage 4</span>
             <div id="icon-stage-4" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold">4</div>
           </div>
           <div class="font-semibold text-sm text-white">filtr Rehydration</div>
@@ -249,41 +276,50 @@
 
       <!-- Execution Results Workspace -->
       <div id="pipeline-results" class="hidden space-y-6">
-        <div class="glass-card rounded-2xl p-6 border border-slate-800 relative overflow-hidden">
+        
+        <!-- Incident Summary Banner -->
+        <div class="glass-card rounded-2xl p-6 border border-slate-800 relative overflow-hidden shadow-2xl">
           <div class="flex flex-col md:flex-row md:items-start justify-between gap-4">
             <div>
               <div class="flex items-center gap-3">
-                <span id="res-severity-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30">CRITICAL</span>
-                <h2 id="res-incident-title" class="text-lg font-bold text-white">Oracle WebLogic Stuck Thread & DB Pool Exhaustion</h2>
+                <span id="res-severity-badge" class="px-3 py-1 rounded-full text-xs font-extrabold bg-rose-500/20 text-rose-400 border border-rose-500/30">CRITICAL</span>
+                <h2 id="res-incident-title" class="text-lg font-bold text-white tracking-tight">Enterprise Service Disruption Incident</h2>
               </div>
-              <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 mt-2">
+              <div class="flex flex-wrap items-center gap-4 text-xs text-slate-400 mt-2.5">
                 <span>Source: <strong id="res-source-name" class="text-slate-200">weblogic</strong></span>
-                <span>Incident ID: <code id="res-report-id" class="text-indigo-400">rep_abc123</code></span>
-                <span>Entities Redacted: <strong id="res-entities-count" class="text-emerald-400">4</strong></span>
-                <span>Pipeline Latency: <strong id="res-pipeline-ms" class="text-slate-200">12ms</strong></span>
+                <span>Incident ID: <code id="res-report-id" class="text-indigo-400 font-mono">rep_abc123</code></span>
+                <span>Entities Masked: <strong id="res-entities-count" class="text-emerald-400">4</strong></span>
+                <span>Pipeline Latency: <strong id="res-pipeline-ms" class="text-slate-200">18ms</strong></span>
+                <span>filtr Status: <strong id="res-filtr-status" class="text-emerald-400">live_container</strong></span>
               </div>
             </div>
 
-            <div class="flex items-center gap-2">
-              <button onclick="copyIncidentMarkdown()" class="px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-xs font-medium text-slate-300 flex items-center gap-1.5 transition-colors">
-                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Markdown
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="copyPlaybook()" class="px-3 py-1.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 text-xs font-semibold border border-emerald-500/30 flex items-center gap-1.5 transition-colors">
+                <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy Playbook
               </button>
-              <button onclick="switchTab('reports')" class="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-xs font-medium border border-indigo-500/30 flex items-center gap-1.5 transition-colors">
-                <i data-lucide="archive" class="w-3.5 h-3.5"></i> View in Reports Log
+              <button onclick="downloadMarkdownReport()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 flex items-center gap-1.5 transition-colors">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i> Markdown
+              </button>
+              <button onclick="downloadJsonReport()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 flex items-center gap-1.5 transition-colors">
+                <i data-lucide="file-code" class="w-3.5 h-3.5"></i> JSON
+              </button>
+              <button onclick="switchTab('reports')" class="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-xs font-semibold border border-indigo-500/30 flex items-center gap-1.5 transition-colors">
+                <i data-lucide="archive" class="w-3.5 h-3.5"></i> Reports Log
               </button>
             </div>
           </div>
 
           <div class="mt-5 p-4 rounded-xl bg-slate-900/80 border border-slate-800">
-            <div class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-2">
-              <i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-400"></i>
-              Root Cause Hypothesis
+            <div class="text-xs font-bold text-amber-400 uppercase tracking-wider mb-1.5 flex items-center gap-2">
+              <i data-lucide="alert-triangle" class="w-3.5 h-3.5"></i>
+              Root Cause Technical Diagnosis
             </div>
-            <p id="res-hypothesis" class="text-sm text-slate-200 leading-relaxed font-sans"></p>
+            <p id="res-hypothesis" class="text-xs text-slate-200 leading-relaxed font-sans"></p>
           </div>
 
           <div class="mt-4 p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30">
-            <div class="text-xs font-semibold text-indigo-300 uppercase tracking-wider mb-2 flex items-center gap-2">
+            <div class="text-xs font-bold text-emerald-400 uppercase tracking-wider mb-2.5 flex items-center gap-2">
               <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
               Rehydrated Engineering Remediation Actions (Real Infrastructure Targets Restored)
             </div>
@@ -294,29 +330,33 @@
 
         <!-- Dual Inspection Columns -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          
+          <!-- Column 1: LLM Egress Payload & Vault Ledger -->
           <div class="glass-card rounded-2xl p-5 border border-slate-800">
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
                 <span class="text-xs font-bold text-white">LLM Egress Payload (Strictly Sanitized)</span>
               </div>
               <span class="text-[10px] font-mono text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">Zero PII/Secrets</span>
             </div>
-            <p class="text-xs text-slate-400 mb-2">This is the exact string passed to the AI model. All real IPs, users, and tokens are obfuscated into secure synthetic tokens.</p>
-            <pre id="res-redacted-view" class="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 text-[11px] text-amber-200/90 overflow-x-auto max-h-72"></pre>
+            <p class="text-xs text-slate-400 mb-2.5">
+              This is the exact string passed to the AI model. All real IPs, accounts, credentials, and hostnames are replaced with synthetic tokens.
+            </p>
+            <pre id="res-redacted-view" class="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 text-[11px] text-amber-200/90 overflow-x-auto max-h-64 leading-relaxed"></pre>
 
             <div class="mt-4 pt-4 border-t border-slate-800">
-              <div class="text-xs font-semibold text-slate-300 mb-2 flex items-center justify-between">
-                <span>Vault Redaction Ledger</span>
-                <span id="res-ledger-count" class="text-[10px] text-slate-400">4 tokens mapped</span>
+              <div class="text-xs font-bold text-slate-300 mb-2 flex items-center justify-between">
+                <span class="flex items-center gap-1.5"><i data-lucide="database" class="w-3.5 h-3.5 text-indigo-400"></i> filtr Vault Redaction Ledger</span>
+                <span id="res-ledger-count" class="text-[10px] font-mono text-emerald-400">0 tokens mapped</span>
               </div>
-              <div class="overflow-x-auto max-h-48 border border-slate-800 rounded-lg">
+              <div class="overflow-x-auto max-h-48 border border-slate-800/80 rounded-xl bg-slate-950/60">
                 <table class="w-full text-left text-xs">
-                  <thead class="bg-slate-900/80 text-slate-400 font-mono text-[10px]">
+                  <thead class="bg-slate-900/90 text-slate-400 font-mono text-[10px]">
                     <tr>
-                      <th class="p-2">Token (LLM Seen)</th>
-                      <th class="p-2">Entity Type</th>
-                      <th class="p-2">Original Value (Private Vault)</th>
+                      <th class="p-2.5">Token (LLM Seen)</th>
+                      <th class="p-2.5">Category</th>
+                      <th class="p-2.5">Original Value (Private Vault)</th>
                     </tr>
                   </thead>
                   <tbody id="res-vault-table" class="divide-y divide-slate-800/60 font-mono text-[11px] text-slate-300">
@@ -326,33 +366,36 @@
             </div>
           </div>
 
+          <!-- Column 2: Safe SRE Output Rehydrated -->
           <div class="glass-card rounded-2xl p-5 border border-slate-800">
             <div class="flex items-center justify-between mb-3">
               <div class="flex items-center gap-2">
-                <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
                 <span class="text-xs font-bold text-white">Safe SRE Output (Rehydrated by filtr)</span>
               </div>
               <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">Operational Restored</span>
             </div>
-            <p class="text-xs text-slate-400 mb-2">The AI's diagnostic advice is rehydrated via filtr's Vault to swap token place-holders back to your actual hostnames and accounts.</p>
+            <p class="text-xs text-slate-400 mb-2.5">
+              The AI model's diagnostic playbook is sent back through filtr's reverse hydration gateway to substitute tokens back to real targets.
+            </p>
 
             <div class="space-y-3">
               <div>
-                <span class="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Before Rehydration (AI Output):</span>
-                <pre id="res-raw-llm-snippet" class="mt-1 p-2.5 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-slate-400 overflow-x-auto max-h-28"></pre>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Before Rehydration (Raw AI Surrogate Reasoning):</span>
+                <pre id="res-raw-llm-snippet" class="mt-1 p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-400 overflow-x-auto max-h-28 leading-relaxed"></pre>
               </div>
 
               <div>
-                <span class="text-[10px] font-semibold text-emerald-400 uppercase tracking-wider">After filtr Rehydration (Ready for DevOps):</span>
-                <pre id="res-rehydrated-snippet" class="mt-1 p-2.5 rounded-lg bg-slate-950 border border-emerald-500/30 text-[11px] text-emerald-300 overflow-x-auto max-h-36"></pre>
+                <span class="text-[10px] font-bold text-emerald-400 uppercase tracking-wider">After filtr Rehydration (Actionable for SREs):</span>
+                <pre id="res-rehydrated-snippet" class="mt-1 p-2.5 rounded-xl bg-slate-950 border border-emerald-500/30 text-[11px] text-emerald-300 overflow-x-auto max-h-36 leading-relaxed font-mono"></pre>
               </div>
 
-              <div class="p-3 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
-                <div>
-                  <div class="font-semibold text-white">Parsed Metadata</div>
-                  <div id="res-parsed-meta" class="text-[11px] text-slate-400 font-mono">Timestamp, severity & source validated</div>
+              <div class="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs text-slate-300 flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+                  <span>Zero Infrastructure Exposure to External Models</span>
                 </div>
-                <i data-lucide="check" class="w-4 h-4 text-emerald-400"></i>
+                <span id="res-parsed-meta" class="text-[10px] text-slate-400 font-mono">10 events parsed</span>
               </div>
             </div>
           </div>
@@ -360,37 +403,171 @@
       </div>
     </div>
 
-    <!-- TAB 2: INCIDENT REPORTS HISTORY -->
+    <!-- TAB 2: INCIDENT REPORTS -->
     <div id="view-reports" class="hidden space-y-6">
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 class="text-xl font-bold text-white flex items-center gap-2">
-            <i data-lucide="archive" class="w-5 h-5 text-indigo-400"></i>
-            Historical Incident Diagnostic Reports
-          </h1>
-          <p class="text-xs text-slate-400 mt-1">
-            Persisted zero-leak diagnostic reports stored in the encrypted platform registry.
-          </p>
+      <div class="glass-card rounded-2xl p-6 border border-slate-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+              <i data-lucide="file-text" class="w-5 h-5 text-indigo-400"></i>
+              Recorded Incident Reports History
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">
+              Historical archive of sanitized diagnostic runs and rehydrated remediation playbooks.
+            </p>
+          </div>
+
+          <!-- Search & Filter Controls -->
+          <div class="flex flex-wrap items-center gap-2">
+            <input type="text" id="report-search-input" oninput="filterReports()" placeholder="Search incidents..."
+              class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-indigo-500" />
+            <select id="report-severity-filter" onchange="filterReports()"
+              class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-slate-300 focus:outline-none focus:border-indigo-500">
+              <option value="ALL">All Severities</option>
+              <option value="CRITICAL">CRITICAL</option>
+              <option value="HIGH">HIGH</option>
+              <option value="MEDIUM">MEDIUM</option>
+            </select>
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <input type="text" id="report-search" placeholder="Search incidents..." oninput="filterReports()"
-            class="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500">
-          <button onclick="fetchReports()" class="p-2 rounded-lg bg-slate-800 text-slate-300 hover:text-white transition-colors" title="Refresh">
-            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-          </button>
+
+        <div id="reports-container" class="space-y-3 mt-4">
+          <!-- Populated by JavaScript -->
         </div>
       </div>
-
-      <div id="reports-container" class="space-y-3"></div>
     </div>
 
-    <!-- TAB 3: SOURCE CONNECTORS & API KEYS -->
+    <!-- TAB 3: ZERO-LEAK DIFF INSPECTOR -->
+    <div id="view-diff" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 border border-slate-800">
+        <h1 class="text-xl font-bold text-white flex items-center gap-2 mb-2">
+          <i data-lucide="split" class="w-5 h-5 text-cyan-400"></i>
+          Interactive Zero-Leak Diff Inspector
+        </h1>
+        <p class="text-xs text-slate-400 max-w-3xl leading-relaxed mb-6">
+          Compare the 4 transformation stages side-by-side to verify that sensitive IPs, database passwords, and internal users are strictly tokenized before leaving memory, and restored safely upon egress.
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 rounded-xl bg-slate-950 border border-rose-500/30">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-rose-400 flex items-center gap-1.5">
+                <i data-lucide="alert-octagon" class="w-3.5 h-3.5"></i> 1. Raw Ingest Stream (Contains Sensitive Data)
+              </span>
+              <span class="text-[10px] text-slate-500 font-mono">Pre-Sanitization</span>
+            </div>
+            <pre id="diff-raw" class="text-[11px] font-mono text-slate-300 p-3 rounded-lg bg-slate-900/60 overflow-x-auto max-h-72 leading-relaxed whitespace-pre-wrap">(Run the pipeline to load diff view)</pre>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-950 border border-amber-500/30">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-amber-400 flex items-center gap-1.5">
+                <i data-lucide="shield" class="w-3.5 h-3.5"></i> 2. filtr Sanitized Payload (Sent to LLM)
+              </span>
+              <span class="text-[10px] text-amber-400 font-mono">Zero PII Leakage</span>
+            </div>
+            <pre id="diff-sanitized" class="text-[11px] font-mono text-amber-200/90 p-3 rounded-lg bg-slate-900/60 overflow-x-auto max-h-72 leading-relaxed whitespace-pre-wrap">(Run the pipeline to load diff view)</pre>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-950 border border-purple-500/30">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-purple-400 flex items-center gap-1.5">
+                <i data-lucide="brain" class="w-3.5 h-3.5"></i> 3. Local AI Diagnostic Hypothesis (Surrogate Tokens)
+              </span>
+              <span class="text-[10px] text-purple-400 font-mono">Model Never Saw Secrets</span>
+            </div>
+            <pre id="diff-llm" class="text-[11px] font-mono text-purple-200/90 p-3 rounded-lg bg-slate-900/60 overflow-x-auto max-h-72 leading-relaxed whitespace-pre-wrap">(Run the pipeline to load diff view)</pre>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-950 border border-emerald-500/30">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> 4. Safe SRE Playbook (Rehydrated by filtr)
+              </span>
+              <span class="text-[10px] text-emerald-400 font-mono">Actionable for DevOps</span>
+            </div>
+            <pre id="diff-hydrated" class="text-[11px] font-mono text-emerald-200/90 p-3 rounded-lg bg-slate-900/60 overflow-x-auto max-h-72 leading-relaxed whitespace-pre-wrap">(Run the pipeline to load diff view)</pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: ELK PIPELINE -->
+    <div id="view-elk" class="hidden space-y-6">
+      <div class="glass-card rounded-2xl p-6 border border-slate-800">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+          <div>
+            <h1 class="text-xl font-bold text-white flex items-center gap-2">
+              <i data-lucide="database" class="w-5 h-5 text-amber-400"></i>
+              ELK Community Edition Auto-Harvester
+            </h1>
+            <p class="text-xs text-slate-400 mt-1">
+              Continuously query Elasticsearch clusters for application errors, cluster events, or ingest directly via Logstash HTTP output.
+            </p>
+          </div>
+          <button onclick="triggerElkHarvestNow()" id="elk-harvest-btn" class="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-white font-semibold text-xs flex items-center gap-2 shadow-lg shadow-amber-600/20 transition-all">
+            <i data-lucide="refresh-cw" class="w-4 h-4"></i> Harvest Now
+          </button>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+          <div class="space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Elasticsearch Cluster URL</label>
+              <input type="text" id="elk-url" value="http://127.0.0.1:9200"
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Index Pattern</label>
+              <input type="text" id="elk-index" value="filebeat-*,logstash-*,*-app-*"
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-300 mb-1">Lucene Filter Query</label>
+              <input type="text" id="elk-query" value="log.level:(ERROR OR FATAL OR CRITICAL) OR level:(ERROR OR FATAL) OR status:[500 TO 599]"
+                class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-amber-500" />
+            </div>
+
+            <div class="flex items-center gap-3 pt-2">
+              <button onclick="testElkConnection()" class="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 transition-colors">
+                Test Connection
+              </button>
+              <button onclick="saveElkConfig()" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold text-white transition-colors">
+                Save Harvester Config
+              </button>
+            </div>
+          </div>
+
+          <div class="glass-card rounded-xl p-4 border border-slate-800/80">
+            <h3 class="text-xs font-bold text-white mb-2 flex items-center gap-1.5">
+              <i data-lucide="file-code" class="w-3.5 h-3.5 text-amber-400"></i> Logstash Direct Forwarding Output
+            </h3>
+            <p class="text-xs text-slate-400 mb-3">Add this snippet to your Logstash pipeline configuration:</p>
+            <pre class="p-3 rounded-lg bg-slate-950 border border-slate-800 text-[11px] text-amber-200 font-mono overflow-x-auto"><code>output {
+  http {
+    url => "http://127.0.0.1:8888/api/elk/forward"
+    http_method => "post"
+    headers => {
+      "X-LogOps-Key" => "logops_key_live_default_9f83a2"
+      "Content-Type" => "application/json"
+    }
+    format => "json"
+  }
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 5: SOURCE CONNECTORS & API KEYS -->
     <div id="view-connectors" class="hidden space-y-6">
       <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 class="text-xl font-bold text-white flex items-center gap-2">
-            <i data-lucide="key" class="w-5 h-5 text-indigo-400"></i>
-            Log Shippers & API Ingestion Credentials
+            <i data-lucide="cpu" class="w-5 h-5 text-indigo-400"></i>
+            Log Shippers & Ingestion API Keys
           </h1>
           <p class="text-xs text-slate-400 mt-1">
             Generate and manage API keys for Fluent Bit, Vector, Logstash, or custom curl scripts.
@@ -426,9 +603,9 @@
               <i data-lucide="terminal" class="w-4 h-4 text-indigo-400"></i>
               Fluent Bit Configuration
             </div>
-            <span class="text-[10px] text-slate-400">fluent-bit.conf</span>
+            <span class="text-[10px] text-slate-400 font-mono">fluent-bit.conf</span>
           </div>
-          <pre class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto"><code>[INPUT]
+          <pre class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto font-mono"><code>[INPUT]
     Name        tail
     Path        /var/log/weblogic/*.log
     Tag         weblogic.server
@@ -450,9 +627,9 @@
               <i data-lucide="share-2" class="w-4 h-4 text-emerald-400"></i>
               Vector.dev Configuration
             </div>
-            <span class="text-[10px] text-slate-400">vector.toml</span>
+            <span class="text-[10px] text-slate-400 font-mono">vector.toml</span>
           </div>
-          <pre class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto"><code>[sources.kafka_logs]
+          <pre class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto font-mono"><code>[sources.kafka_logs]
 type = "file"
 include = ["/var/log/kafka/server.log"]
 
@@ -471,14 +648,14 @@ encoding.codec = "json"</code></pre>
               <i data-lucide="code" class="w-4 h-4 text-cyan-400"></i>
               Direct cURL Ingest Example
             </div>
-            <span class="text-[10px] text-slate-400">REST API</span>
+            <span class="text-[10px] text-slate-400 font-mono">REST API</span>
           </div>
-          <pre class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto"><code>curl -X POST http://localhost:8888/api/ingest \
+          <pre class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto font-mono"><code>curl -X POST http://localhost:8888/api/ingest \
   -H "X-LogOps-Key: logops_key_live_default_9f83a2" \
   -H "Content-Type: application/json" \
   -d '{
-    "sourceType": "weblogic",
-    "rawLogs": "####<Oct 13, 2026> <Error> <WebLogicServer> <BEA-000337> <[STUCK] ExecuteThread: 12 failed>"
+    "sourceType": "kubernetes",
+    "rawLogs": "kubelet: Pod payment-service terminated with exit code 137 (OOMKilled)"
   }'</code></pre>
         </div>
 
@@ -488,9 +665,9 @@ encoding.codec = "json"</code></pre>
               <i data-lucide="cpu" class="w-4 h-4 text-amber-400"></i>
               PowerShell Windows Event Shipper
             </div>
-            <span class="text-[10px] text-slate-400">shipper.ps1</span>
+            <span class="text-[10px] text-slate-400 font-mono">shipper.ps1</span>
           </div>
-          <pre class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto"><code>$Event = Get-WinEvent -LogName "System" -MaxEvents 1
+          <pre class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] text-slate-300 overflow-x-auto font-mono"><code>$Event = Get-WinEvent -LogName "Security" -MaxEvents 1
 $Body = @{
     sourceType = "windows"
     rawLogs = $Event.Message
@@ -503,7 +680,7 @@ Invoke-RestMethod -Uri "http://localhost:8888/api/ingest" `
       </div>
     </div>
 
-    <!-- TAB 4: ARCHITECTURE -->
+    <!-- TAB 6: ARCHITECTURE -->
     <div id="view-architecture" class="hidden space-y-6">
       <div class="glass-card rounded-2xl p-6 border border-slate-800">
         <h1 class="text-xl font-bold text-white mb-2 flex items-center gap-2">
@@ -523,7 +700,7 @@ Invoke-RestMethod -Uri "http://localhost:8888/api/ingest" `
                 <i data-lucide="server" class="w-5 h-5"></i>
               </div>
               <div class="text-xs font-bold text-white">1. Log Shippers</div>
-              <div class="text-[11px] text-slate-400 mt-1">WebLogic, Kafka, Apache, Jenkins, Windows</div>
+              <div class="text-[11px] text-slate-400 mt-1">10 Enterprise Sources</div>
               <div class="text-[10px] text-slate-500 font-mono mt-2">X-LogOps-Key Ingest</div>
             </div>
 
@@ -551,7 +728,7 @@ Invoke-RestMethod -Uri "http://localhost:8888/api/ingest" `
               </div>
               <div class="text-xs font-bold text-emerald-200">4. filtr Rehydration</div>
               <div class="text-[11px] text-slate-300 mt-1">POST /api/v1/hydrate</div>
-              <div class="text-[10px] text-emerald-400 font-mono mt-2">Real SRE Action Playbook</div>
+              <div class="text-[10px] text-emerald-400 font-mono mt-2">Target Restoration</div>
             </div>
           </div>
         </div>
@@ -562,7 +739,7 @@ Invoke-RestMethod -Uri "http://localhost:8888/api/ingest" `
               <i data-lucide="lock" class="w-4 h-4 text-indigo-400"></i> No Cloud Data Leaks
             </div>
             <p class="text-xs text-slate-400 leading-relaxed">
-              Every log payload is scrubbed before leaving memory. Even if forwarding to an external LLM, the model only sees token references.
+              Every log payload is scrubbed before leaving memory. Even if forwarding to an external LLM, the model only sees surrogate token references.
             </p>
           </div>
 
@@ -571,16 +748,16 @@ Invoke-RestMethod -Uri "http://localhost:8888/api/ingest" `
               <i data-lucide="database" class="w-4 h-4 text-emerald-400"></i> Ephemeral Token Vaults
             </div>
             <p class="text-xs text-slate-400 leading-relaxed">
-              Token mappings are isolated per pipeline invocation or session, preventing correlation attacks across different enterprise tenants.
+              Token mappings are isolated per session, preventing correlation attacks across different enterprise services and clusters.
             </p>
           </div>
 
           <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
             <div class="text-xs font-bold text-white flex items-center gap-2 mb-1.5">
-              <i data-lucide="zap" class="w-4 h-4 text-purple-400"></i> Domain-Tuned Diagnostics
+              <i data-lucide="zap" class="w-4 h-4 text-purple-400"></i> 10 Enterprise Parsers
             </div>
             <p class="text-xs text-slate-400 leading-relaxed">
-              Parsers understand WebLogic stuck threads, Kafka consumer rebalances, Windows Event 4625 brute forces, and Jenkins Maven OOMs.
+              Structured parsers understand WebLogic, Kafka, Kubernetes, PostgreSQL, AWS CloudWatch, Redis, Nginx, Apache, Windows Event, and Jenkins.
             </p>
           </div>
         </div>
@@ -595,49 +772,105 @@ Invoke-RestMethod -Uri "http://localhost:8888/api/ingest" `
     let currentReport = null;
     let reportsList = [];
     let apiKeysList = [];
+    let statusInterval = null;
 
     const SAMPLE_LOGS = {
-      weblogic: `####<Oct 13, 2026 21:14:02,120 EDT> <Error> <WebLogicServer> <prod-app-04.corp.internal> <AdminServer> <[STUCK] ExecuteThread: '14' for queue: 'weblogic.kernel.Default (self-tuning)' has been busy for "680" seconds working on the request "HttpProcessRequest", which is more than the configured time (StuckThreadMaxTime) of "600" seconds. Stack trace:
-    at oracle.jdbc.driver.T4CPreparedStatement.execute(T4CPreparedStatement.java:1290)
-    at com.enterprise.billing.dao.InvoiceDAO.fetchPending(InvoiceDAO.java:441)
-    User identity: svc_payment_gateway@corp.internal from 192.168.1.105 with JDBC session pool db_pool_prod exhausted>`,
+      weblogic: `####<Oct 19, 2026 2:15:20 PM UTC> <Error> <WebLogicServer> <prod-wls-01.corp.internal> <ManagedServer_2> <[ACTIVE] ExecuteThread: '4' for queue: 'weblogic.kernel.Default (self-tuning)'> <<WLS Kernel>> <> <000000> <BEA-000337> <[STUCK] ExecuteThread: '4' for queue: 'weblogic.kernel.Default (self-tuning)' has been busy for "680" seconds working on the request "HttpTrace", which is more than the configured time (StuckThreadMaxTime) of "600" seconds. Stack trace:
+java.sql.SQLException: Connection pool "OracleFinDS" has reached MaxCapacity=100. Connection allocation timed out after 30000ms.
+	at weblogic.jdbc.common.internal.ConnectionEnv.allocate(ConnectionEnv.java:312)
+	at weblogic.jdbc.wrapper.PoolConnection.init(PoolConnection.java:88)
+	Database endpoint: jdbc:oracle:thin:@10.100.40.15:1521/ORCLFIN with user=app_db_user password="SuperSecretPassword2026!">
+####<Oct 19, 2026 2:15:35 PM UTC> <Warning> <JDBC> <prod-wls-01.corp.internal> <ManagedServer_2> <[ACTIVE] ExecuteThread: '2'> <<WLS Kernel>> <> <000000> <BEA-001153> <Forcibly releasing idle resource from pool "OracleFinDS" to relieve thread contention.>`,
 
-      kafka: `[2026-10-13 21:12:44,891] ERROR [KafkaServer id=2] Fatal error during KafkaServer startup. Prepare to shutdown (kafka.server.KafkaServer)
-org.apache.kafka.common.errors.ClusterAuthorizationException: Principal User:kafka_producer_orders@finance.internal is not authorized to describe cluster resource.
-[2026-10-13 21:12:45,102] WARN [Consumer clientId=payment-stream-group-1, groupId=payment-stream] Connection to node 10.0.4.88:9092 could not be established. Broker may not be available.`,
+      kafka: `[2026-10-19 14:22:01,892] ERROR [KafkaServer id=2] Fatal error during KafkaServer startup. Prepare to shutdown (kafka.server.KafkaServer)
+org.apache.kafka.common.errors.ClusterAuthorizationException: Principal User:kafka_producer_client@finance.internal is not authorized to access topic: customer-payment-events with ApiKey: 3
+[2026-10-19 14:22:03,104] WARN [GroupCoordinator 2]: Member telemetry-consumer-01_10.128.4.15 in group "payment-processors" has failed heartbeat (session.timeout.ms=10000). Triggering partition rebalance.
+[2026-10-19 14:22:04,412] ERROR [ReplicaManager broker=2] Error shrink ISR for partition payment-transactions-0 from [1,2,3] to [1,3]. Broker 10.128.4.20 unreachable.`,
 
-      apache: `192.168.1.105 - svc_payment_gateway [13/Oct/2026:21:14:02 -0400] "POST /api/v1/invoices/process HTTP/1.1" 500 2412 "https://billing.corp.internal" "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
-192.168.1.105 - - [13/Oct/2026:21:14:03 -0400] "GET /server-status HTTP/1.1" 403 481 "-" "curl/7.88.1"`,
+      kubernetes: `2026-10-19T14:35:10.120Z kubelet node-worker-pool-3 Pod payment-processing-service-7f89d4-x9z12 container checkout-worker terminated with exit code 137 (OOMKilled)
+2026-10-19T14:35:11.450Z kubelet node-worker-pool-3 Readiness probe failed: HTTP probe failed with statuscode: 503 for pod payment-processing-service-7f89d4-x9z12 (10.244.3.44:8080)
+2026-10-19T14:35:12.890Z kubelet node-worker-pool-3 Back-off restarting failed container checkout-worker in pod payment-processing-service-7f89d4-x9z12_prod-namespace(48e9c-12)
+2026-10-19T14:35:15.002Z k8s-apiserver [audit] user="system:serviceaccount:prod:ingress-controller" ip="10.244.0.1" verb="get" uri="/api/v1/namespaces/prod/secrets/vault-api-jwt" code=403
+2026-10-19T14:35:20.100Z kubelet Warning FailedScheduling pod/payment-processing-service-7f89d4-x9z12 0/8 nodes are available: 3 Insufficient memory, 5 node(s) had untolerated taint.`,
 
-      windows: `LogName: Security
-EventID: 4625
-TaskCategory: Logon
+      postgres: `2026-10-19 14:40:12.019 UTC [14820] prod_billing_db app_user_prod 10.0.12.50(44120) FATAL: remaining connection slots are reserved for non-replication superuser connections
+2026-10-19 14:40:12.891 UTC [14821] prod_billing_db app_user_prod 10.0.12.50(44122) ERROR: deadlock detected
+2026-10-19 14:40:12.892 UTC [14821] prod_billing_db DETAIL: Process 14821 waits for ExclusiveLock on transaction 891240; blocked by process 14818.
+Process 14818 waits for ShareLock on transaction 891241; blocked by process 14821.
+2026-10-19 14:40:12.893 UTC [14821] prod_billing_db HINT: See server log for query details. Connection string: postgresql://admin_db:SecureDbPass2026!@10.0.12.50:5432/prod_billing_db
+2026-10-19 14:40:13.104 UTC [14822] prod_billing_db STATEMENT: UPDATE customer_accounts SET balance = balance - 120.00 WHERE account_id = 'ACC-99824';`,
+
+      aws: `2026-10-19T14:45:00.102Z 8f9b2c3d-12ab-4c5d-9e8f-123456789abc START RequestId: 8f9b2c3d-12ab-4c5d-9e8f-123456789abc Version: $LATEST
+2026-10-19T14:45:02.341Z 8f9b2c3d-12ab-4c5d-9e8f-123456789abc [ERROR] ClientError: An error occurred (AccessDeniedException) when calling the Decrypt operation: The ciphertext refers to a customer master key that does not exist or you are not authorized to use.
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE role_arn="arn:aws:iam::123456789012:role/lambda-payment-processor"
+2026-10-19T14:45:30.104Z 8f9b2c3d-12ab-4c5d-9e8f-123456789abc Task timed out after 30.00 seconds
+2026-10-19T14:45:30.105Z 8f9b2c3d-12ab-4c5d-9e8f-123456789abc END RequestId: 8f9b2c3d-12ab-4c5d-9e8f-123456789abc
+REPORT RequestId: 8f9b2c3d-12ab-4c5d-9e8f-123456789abc Duration: 30000.00 ms Billed Duration: 30000 ms Memory Size: 1024 MB Max Memory Used: 248 MB`,
+
+      redis: `1:M 19 Oct 2026 14:50:01.120 # OOM command not allowed when used memory > 'maxmemory' (current used: 4294967296 bytes, limit: 4294967296 bytes).
+1:M 19 Oct 2026 14:50:01.440 * Client id=4981 addr=10.0.4.15:52190 name=api_cache_client age=140 idle=0 flags=N db=0 fd=18 sub=0 psub=0 multi=-1 qbuf=26 qbuf-free=40928 argv-mem=10 obl=0 oll=0 omem=0 tot-mem=61466 events=r cmd=set user=default
+1:S 19 Oct 2026 14:50:05.890 * Connecting to MASTER 10.0.4.10:6379 with password="ProdRedisCachePassword2026!"
+1:S 19 Oct 2026 14:50:05.892 # Error condition on socket for SYNC: Connection refused
+1:X 19 Oct 2026 14:50:10.002 # +sdown master redis-prod-master 10.0.4.10 6379
+1:X 19 Oct 2026 14:50:11.200 # +odown master redis-prod-master 10.0.4.10 6379 #quorum 2/2`,
+
+      nginx: `2026/10/19 14:55:01 [error] 2891#2891: *14902 connect() failed (111: Connection refused) while connecting to upstream, client: 198.51.100.77, server: api.enterprise.internal, request: "POST /v1/transactions/authorize HTTP/1.1", upstream: "http://10.240.10.15:8443/v1/transactions/authorize", host: "api.enterprise.internal"
+2026/10/19 14:55:02 [error] 2891#2891: *14903 SSL_do_handshake() failed (SSL: error:0A000086:SSL routines::certificate verify failed) while SSL handshaking to upstream, client: 198.51.100.77, server: api.enterprise.internal, upstream: "https://10.240.10.16:8443/v1/transactions/authorize"
+2026/10/19 14:55:03 [error] 2891#2891: *14904 no live upstreams while connecting to upstream, client: 198.51.100.77, server: api.enterprise.internal, request: "POST /v1/transactions/authorize HTTP/1.1", upstream: "http://billing_cluster"`,
+
+      apache: `[Sun Oct 19 14:15:20.892019 2026] [proxy:error] [pid 14208:tid 1399] [client 198.51.100.42:54210] AH00898: Error reading from remote server returned by /api/v2/checkout
+[Sun Oct 19 14:15:20.893102 2026] [proxy_http:error] [pid 14208:tid 1399] (70007)The timeout specified has expired: [client 198.51.100.42:54210] AH01102: error reading status line from remote server 10.240.12.88:8080
+[Sun Oct 19 14:15:21.011244 2026] [mpm_event:error] [pid 14199:tid 1402] AH00484: server reached MaxRequestWorkers setting, consider raising the MaxRequestWorkers setting
+198.51.100.42 - john.doe@company.com [19/Oct/2026:14:15:22 +0000] "POST /api/v2/checkout HTTP/1.1" 504 182 "https://portal.company.com/cart" "Mozilla/5.0" Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.token123`,
+
+      windows: `Event[0]:
+Log Name: Security
+Source: Microsoft-Windows-Security-Auditing
+Date: 2026-10-19T14:30:12.000Z
+Event ID: 4625
 Level: Information
 Keywords: Audit Failure
-User: N/A
-Computer: DC01.corp.internal
+Computer: WIN-DC01.corp.internal
 Description:
 An account failed to log on.
-Subject:
-  Security ID: NULL SID
-  Account Name: -
-Account That Failed to Logon:
-  Account Name: admin_backup
-  Failure Reason: Unknown user name or bad password.
+Account For Which Logon Failed:
+	Security ID:		NULL SID
+	Account Name:		svc_jenkins_deployer@corp.internal
+	Account Domain:		CORP
+Failure Information:
+	Failure Reason:		Unknown user name or bad password.
+	Status:			0xC000006D
+	Sub Status:		0xC000006A
 Network Information:
-  Workstation Name: LAPTOP-DEV-99
-  Source Network Address: 192.168.1.250`,
+	Workstation Name:	WIN-HOST99
+	Source Network Address:	192.168.10.85
+	Source Port:		49820
 
-      jenkins: `[INFO] ------------------------------------------------------------------------
-[INFO] BUILD FAILURE
-[INFO] ------------------------------------------------------------------------
-[INFO] Total time:  04:12 min
-[INFO] Finished at: 2026-10-13T21:15:33-04:00
-[ERROR] Java heap space
-java.lang.OutOfMemoryError: Java heap space
+Event[1]:
+Log Name: System
+Source: Service Control Manager
+Date: 2026-10-19T14:31:00.000Z
+Event ID: 7034
+Level: Error
+Computer: WIN-DC01.corp.internal
+Description:
+The Enterprise Sync Service service terminated unexpectedly. It has done this 1 time(s).`,
+
+      jenkins: `Started by user admin_devops@corp.internal
+Running in Durability level: MAX_SURVIVABILITY
+[Pipeline] Start of Pipeline
+[Pipeline] stage (Build & Test)
++ mvn clean package -DskipTests=false
+[INFO] Scanning for projects...
+[INFO] Building Enterprise Payment Gateway 4.1.0
+[ERROR] Failed to execute goal org.apache.maven.plugins:maven-surefire-plugin:3.0.0:test (default-test) on project billing-gateway:
+[ERROR] Tests run: 214, Failures: 1, Errors: 0, Skipped: 0
+[ERROR] ConnectionRefusedException: Failed to connect to Redis cache at 10.0.80.25:6379 with auth_token="redis_prod_auth_token_999"
+[ERROR] java.lang.OutOfMemoryError: Java heap space
     at java.base/java.util.Arrays.copyOf(Arrays.java:3537)
-    at org.apache.maven.surefire.booter.ForkedBooter.main(ForkedBooter.java:418)
-Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
+Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99
+ERROR: Build step failed with exit code 1
+Finished: FAILURE`
     };
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -648,6 +881,34 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
         showLogin();
       }
     });
+
+    async function checkHealthStatus() {
+      try {
+        const res = await fetch('/api/status');
+        if (res.ok) {
+          const data = await res.json();
+          const filtrPill = document.getElementById('pill-filtr');
+          const llmPill = document.getElementById('pill-llm');
+
+          if (data.filtr && data.filtr.live) {
+            filtrPill.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+            filtrPill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> filtr: Live (${data.filtr.latencyMs || 0}ms)`;
+          } else {
+            filtrPill.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20';
+            filtrPill.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> filtr: Standalone Vault`;
+          }
+
+          if (data.llm && data.llm.live) {
+            llmPill.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full bg-purple-500/10 text-purple-400 border border-purple-500/20';
+            llmPill.innerHTML = `<i data-lucide="sparkles" class="w-3 h-3"></i> Ollama: ${data.llm.model || 'live'}`;
+          } else {
+            llmPill.className = 'flex items-center gap-1.5 text-[11px] font-mono px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20';
+            llmPill.innerHTML = `<i data-lucide="cpu" class="w-3 h-3"></i> Diagnostic Simulator`;
+          }
+          lucide.createIcons();
+        }
+      } catch (e) {}
+    }
 
     async function verifySession() {
       try {
@@ -667,6 +928,7 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
     }
 
     function showLogin() {
+      if (statusInterval) clearInterval(statusInterval);
       document.getElementById('view-login').classList.remove('hidden');
       document.getElementById('app-container').classList.add('hidden');
       document.getElementById('nav-tabs').classList.add('hidden');
@@ -686,6 +948,8 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
       selectSource('weblogic');
       fetchReports();
       fetchApiKeys();
+      checkHealthStatus();
+      if (!statusInterval) statusInterval = setInterval(checkHealthStatus, 10000);
       lucide.createIcons();
     }
 
@@ -726,7 +990,7 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
     }
 
     function switchTab(tabId) {
-      ['pipeline', 'reports', 'elk', 'connectors', 'architecture'].forEach(t => {
+      ['pipeline', 'reports', 'diff', 'elk', 'connectors', 'architecture'].forEach(t => {
         const view = document.getElementById('view-' + t);
         const btn = document.getElementById('tab-btn-' + t);
         if (view && btn) {
@@ -751,11 +1015,9 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
       currentSource = source;
       document.querySelectorAll('.source-btn').forEach(btn => {
         if (btn.getAttribute('data-source') === source) {
-          btn.classList.add('bg-indigo-600', 'text-white', 'border-indigo-500');
-          btn.classList.remove('bg-slate-900/80', 'text-slate-300', 'border-slate-800');
+          btn.className = 'source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-indigo-600 text-white border border-indigo-500 flex items-center gap-2 transition-all shadow-md';
         } else {
-          btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-500');
-          btn.classList.add('bg-slate-900/80', 'text-slate-300', 'border-slate-800');
+          btn.className = 'source-btn px-3 py-2 rounded-xl text-xs font-semibold bg-slate-900/80 text-slate-300 border border-slate-800 hover:border-slate-700 flex items-center gap-2 transition-all';
         }
       });
       document.getElementById('active-source-badge').innerText = source;
@@ -763,30 +1025,45 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
     }
 
     function loadSampleLog() {
-      const textarea = document.getElementById('log-input');
-      textarea.value = SAMPLE_LOGS[currentSource] || '';
+      const sample = SAMPLE_LOGS[currentSource] || SAMPLE_LOGS.weblogic;
+      document.getElementById('log-input').value = sample;
+      updateCharCount();
+    }
+
+    function updateCharCount() {
+      const text = document.getElementById('log-input').value;
+      const lines = text.trim() ? text.trim().split('\n').length : 0;
+      document.getElementById('log-char-count').innerText = `${text.length} chars • ${lines} lines`;
+    }
+
+    function resetStepper() {
+      for (let i = 1; i <= 4; i++) {
+        const card = document.getElementById('card-stage-' + i);
+        card.className = 'stage-card glass-card rounded-xl p-4 border border-slate-800';
+        document.getElementById('icon-stage-' + i).className = 'w-6 h-6 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center text-xs font-bold';
+        document.getElementById('icon-stage-' + i).innerText = i;
+        document.getElementById('stat-stage-' + i).innerText = 'Idle';
+      }
     }
 
     async function runPipeline() {
-      const rawLogs = document.getElementById('log-input').value.trim();
-      if (!rawLogs) {
-        alert('Please enter or load sample logs before running the pipeline.');
+      const logs = document.getElementById('log-input').value.trim();
+      if (!logs) {
+        alert('Please paste or load logs to run pipeline.');
         return;
       }
 
       const runBtn = document.getElementById('run-pipeline-btn');
       runBtn.disabled = true;
-      runBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> <span>Processing Pipeline...</span>`;
+      runBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> <span>Processing Zero-Leak Pipeline...</span>`;
       lucide.createIcons();
 
-      for (let s = 1; s <= 4; s++) {
-        const card = document.getElementById('card-stage-' + s);
-        card.className = 'stage-card glass-card rounded-xl p-4 border border-slate-800';
-        document.getElementById('stat-stage-' + s).innerText = 'Running...';
-        document.getElementById('icon-stage-' + s).className = 'w-6 h-6 rounded-full bg-indigo-600/30 text-indigo-400 flex items-center justify-center text-xs font-bold';
-      }
+      resetStepper();
 
-      document.getElementById('card-stage-1').classList.add('active');
+      // Stage 1 animation
+      const c1 = document.getElementById('card-stage-1');
+      c1.classList.add('active');
+      document.getElementById('stat-stage-1').innerText = 'Parsing logs...';
 
       try {
         const response = await fetch('/api/pipeline/run', {
@@ -797,7 +1074,7 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
           },
           body: JSON.stringify({
             sourceType: currentSource,
-            rawLogs: rawLogs
+            logs
           })
         });
 
@@ -807,8 +1084,9 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
         }
 
         currentReport = data.report;
-        updateStepperSuccess(data);
-        renderPipelineResults(data.report);
+        updateStepperSuccess(currentReport);
+        renderPipelineResults(currentReport);
+        updateDiffView(currentReport, logs);
         fetchReports();
 
       } catch (err) {
@@ -820,28 +1098,31 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
       }
     }
 
-    function updateStepperSuccess(data) {
+    function updateStepperSuccess(report) {
       const c1 = document.getElementById('card-stage-1');
       c1.className = 'stage-card glass-card rounded-xl p-4 border completed';
-      document.getElementById('stat-stage-1').innerHTML = `<span class="text-emerald-400">Parsed: ${data.report.parsedMetadata?.eventType || 'OK'}</span>`;
+      document.getElementById('stat-stage-1').innerHTML = `<span class="text-emerald-400">Parsed: ${report.rawLogLines || 1} lines</span>`;
       document.getElementById('icon-stage-1').className = 'w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold';
       document.getElementById('icon-stage-1').innerHTML = '✓';
 
       const c2 = document.getElementById('card-stage-2');
       c2.className = 'stage-card glass-card rounded-xl p-4 border completed';
-      document.getElementById('stat-stage-2').innerHTML = `<span class="text-emerald-400">${data.report.tokenLedger?.length || 0} Entities Masked</span>`;
+      const maskedCount = report.stages?.sanitization?.redactedCount || (report.tokenLedger || []).length || 0;
+      document.getElementById('stat-stage-2').innerHTML = `<span class="text-emerald-400">${maskedCount} Entities Masked</span>`;
       document.getElementById('icon-stage-2').className = 'w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold';
       document.getElementById('icon-stage-2').innerHTML = '✓';
 
       const c3 = document.getElementById('card-stage-3');
       c3.className = 'stage-card glass-card rounded-xl p-4 border completed';
-      document.getElementById('stat-stage-3').innerHTML = `<span class="text-purple-400">${data.report.diagnostic?.severity || 'Diagnosed'}</span>`;
-      document.getElementById('icon-stage-3').className = 'w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold';
+      const sev = report.diagnostic?.severity || 'Diagnosed';
+      document.getElementById('stat-stage-3').innerHTML = `<span class="text-purple-400">${sev}</span>`;
+      document.getElementById('icon-stage-3').className = 'w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold';
       document.getElementById('icon-stage-3').innerHTML = '✓';
 
       const c4 = document.getElementById('card-stage-4');
       c4.className = 'stage-card glass-card rounded-xl p-4 border completed';
-      document.getElementById('stat-stage-4').innerHTML = `<span class="text-emerald-400">Restored in ${data.executionMs}ms</span>`;
+      const duration = report.durationMs || report.executionMs || 15;
+      document.getElementById('stat-stage-4').innerHTML = `<span class="text-emerald-400">Restored in ${duration}ms</span>`;
       document.getElementById('icon-stage-4').className = 'w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold';
       document.getElementById('icon-stage-4').innerHTML = '✓';
     }
@@ -853,19 +1134,15 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
       const diag = report.diagnostic || report.stages?.rehydration?.finalReport || {};
       const severity = diag.severity || 'CRITICAL';
       const title = diag.incidentTitle || 'Enterprise Service Disruption Incident';
-      const hypothesis = diag.rootCauseHypothesis || diag.rootCause || 'Root cause identified across runtime telemetry.';
-      const actions = diag.remediationActions || diag.remediationSteps || [];
-      const tokenLedger = report.tokenLedger || report.stages?.sanitization?.entities || [
-        { token: '<IP_ADDRESS_1>', type: 'IP_ADDRESS', original: '192.168.1.105' },
-        { token: '<EMAIL_1>', type: 'EMAIL', original: 'svc_payment_gateway@corp.internal' },
-        { token: '<HOST_1>', type: 'HOST', original: 'prod-app-04.corp.internal' }
-      ];
+      const hypothesis = diag.rootCause || diag.rootCauseHypothesis || 'Root cause identified across runtime telemetry.';
+      const actions = diag.remediationSteps || diag.remediationActions || [];
+      const tokenLedger = report.tokenLedger || report.stages?.sanitization?.entities || [];
 
       const sevBadge = document.getElementById('res-severity-badge');
       sevBadge.innerText = severity;
-      if (report.diagnostic.severity === 'CRITICAL') {
+      if (severity === 'CRITICAL') {
         sevBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30';
-      } else if (report.diagnostic.severity === 'HIGH') {
+      } else if (severity === 'HIGH') {
         sevBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30';
       } else {
         sevBadge.className = 'px-3 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30';
@@ -875,19 +1152,20 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
       document.getElementById('res-source-name').innerText = report.sourceType;
       document.getElementById('res-report-id').innerText = report.id;
       document.getElementById('res-entities-count').innerText = report.stages?.sanitization?.redactedCount || tokenLedger.length;
-      document.getElementById('res-pipeline-ms').innerText = report.stages?.totalElapsedMs ? report.stages.totalElapsedMs + 'ms' : '18ms';
+      document.getElementById('res-pipeline-ms').innerText = (report.durationMs || report.executionMs || 15) + 'ms';
+      document.getElementById('res-filtr-status').innerText = report.filtrEngineStatus || 'live_container';
       document.getElementById('res-hypothesis').innerText = hypothesis;
 
       const actionsList = document.getElementById('res-actions-list');
       actionsList.innerHTML = '';
-      actions.forEach(action => {
+      actions.forEach((action, i) => {
         const li = document.createElement('li');
-        li.className = 'flex items-start gap-2 bg-slate-900/60 p-2.5 rounded-lg border border-slate-800';
-        li.innerHTML = `<i data-lucide="arrow-right-circle" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i> <span>${escapeHtml(action)}</span>`;
+        li.className = 'flex items-start gap-2 bg-slate-900/60 p-2.5 rounded-xl border border-slate-800';
+        li.innerHTML = `<span class="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 text-[11px] font-bold flex items-center justify-center shrink-0 mt-0.5">${i+1}</span> <span class="font-sans text-xs leading-relaxed">${escapeHtml(action)}</span>`;
         actionsList.appendChild(li);
       });
 
-      document.getElementById('res-redacted-view').innerText = report.stages?.stage2_redact?.sanitizedLog || '(Sanitized payload)';
+      document.getElementById('res-redacted-view').innerText = report.stages?.sanitization?.sanitizedPreview || '(Sanitized payload)';
 
       const ledgerTbody = document.getElementById('res-vault-table');
       ledgerTbody.innerHTML = '';
@@ -895,9 +1173,9 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
         const tr = document.createElement('tr');
         tr.className = 'hover:bg-slate-900/50';
         tr.innerHTML = `
-          <td class="p-2 text-amber-400 font-bold">${escapeHtml(item.token)}</td>
-          <td class="p-2 text-slate-400"><span class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px]">${escapeHtml(item.type)}</span></td>
-          <td class="p-2 text-emerald-400">${escapeHtml(item.original)}</td>
+          <td class="p-2.5 text-amber-400 font-bold">${escapeHtml(item.token)}</td>
+          <td class="p-2.5 text-slate-400"><span class="px-1.5 py-0.5 rounded bg-slate-800 text-[10px] uppercase">${escapeHtml(item.type)}</span></td>
+          <td class="p-2.5 text-emerald-400">${escapeHtml(item.original)}</td>
         `;
         ledgerTbody.appendChild(tr);
       });
@@ -906,14 +1184,23 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
       const rawAiText = typeof report.stages?.llmInference?.rawSurrogateOutput === 'string' ? report.stages.llmInference.rawSurrogateOutput : JSON.stringify(diag, null, 2);
       document.getElementById('res-raw-llm-snippet').innerText = rawAiText;
       
-      const actionsText = actions.map((a, i) => `[${i+1}] ${a}`).join('\n');
+      const actionsText = actions.map((a, i) => `[STEP ${i+1}] ${a}`).join('\n\n');
       document.getElementById('res-rehydrated-snippet').innerText = actionsText;
 
-      const meta = report.parsedMetadata || {};
-      document.getElementById('res-parsed-meta').innerText = `Extracted ${Object.keys(meta).length} structural fields (${meta.level || 'INFO'}, ${meta.sourceFile || meta.component || 'core'})`;
+      document.getElementById('res-parsed-meta').innerText = `${report.rawLogLines || 1} lines parsed (${report.parsedMetadata?.errors || 0} errors)`;
 
       lucide.createIcons();
       resultsDiv.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function updateDiffView(report, raw) {
+      document.getElementById('diff-raw').innerText = raw;
+      document.getElementById('diff-sanitized').innerText = report.stages?.sanitization?.sanitizedPreview || '(Sanitized payload)';
+      document.getElementById('diff-llm').innerText = report.stages?.llmInference?.rawSurrogateOutput || '(LLM surrogate output)';
+      
+      const diag = report.diagnostic || {};
+      const actions = (diag.remediationSteps || []).map((a, i) => `${i+1}. ${a}`).join('\n');
+      document.getElementById('diff-hydrated').innerText = `INCIDENT: ${diag.incidentTitle}\nSEVERITY: ${diag.severity}\n\nROOT CAUSE:\n${diag.rootCause}\n\nPLAYBOOK:\n${actions}`;
     }
 
     async function fetchReports() {
@@ -922,13 +1209,30 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
         if (res.ok) {
-          reportsList = await res.json();
+          const data = await res.json();
+          reportsList = Array.isArray(data.reports) ? data.reports : (Array.isArray(data) ? data : []);
           document.getElementById('nav-report-badge').innerText = reportsList.length;
           renderReportsList(reportsList);
         }
       } catch (e) {
         console.error('Fetch reports error', e);
       }
+    }
+
+    function filterReports() {
+      const query = (document.getElementById('report-search-input').value || '').toLowerCase();
+      const sev = document.getElementById('report-severity-filter').value;
+
+      const filtered = reportsList.filter(rep => {
+        const diag = rep.diagnostic || {};
+        const title = (diag.incidentTitle || '').toLowerCase();
+        const src = (rep.sourceType || '').toLowerCase();
+        const matchesQuery = !query || title.includes(query) || src.includes(query) || rep.id.toLowerCase().includes(query);
+        const matchesSev = sev === 'ALL' || diag.severity === sev;
+        return matchesQuery && matchesSev;
+      });
+
+      renderReportsList(filtered);
     }
 
     function renderReportsList(list) {
@@ -939,56 +1243,78 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
         container.innerHTML = `
           <div class="glass-card rounded-2xl p-8 text-center text-slate-400 border border-slate-800">
             <i data-lucide="inbox" class="w-10 h-10 mx-auto text-slate-600 mb-2"></i>
-            <p class="text-sm">No incident reports recorded yet. Run the pipeline on sample logs to generate reports.</p>
+            <p class="text-sm font-medium">No incident reports match your filter.</p>
+            <p class="text-xs text-slate-500 mt-1">Execute the pipeline on any sample log to generate diagnostic reports.</p>
           </div>`;
         lucide.createIcons();
         return;
       }
 
       list.forEach(rep => {
+        const diag = rep.diagnostic || {};
+        const sev = diag.severity || 'CRITICAL';
         const card = document.createElement('div');
-        card.className = 'glass-card rounded-xl p-4 border border-slate-800 hover:border-slate-700 transition-all cursor-pointer';
-        card.onclick = () => {
-          renderPipelineResults(rep);
-          switchTab('pipeline');
-        };
-
-        const repSev = rep.diagnostic?.severity || rep.stages?.rehydration?.finalReport?.severity || 'HIGH';
-        const repTitle = rep.diagnostic?.incidentTitle || rep.stages?.rehydration?.finalReport?.incidentTitle || 'Incident Report';
-        const sevClass = repSev === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400 border-rose-500/30' :
-                         rep.diagnostic?.severity === 'HIGH' ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+        card.className = 'glass-card rounded-xl p-4 border border-slate-800 hover:border-slate-700 transition-all cursor-pointer flex flex-col md:flex-row md:items-center justify-between gap-3';
+        
+        let sevClass = 'bg-rose-500/20 text-rose-400 border-rose-500/30';
+        if (sev === 'HIGH') sevClass = 'bg-amber-500/20 text-amber-400 border-amber-500/30';
+        if (sev === 'MEDIUM') sevClass = 'bg-blue-500/20 text-blue-400 border-blue-500/30';
 
         card.innerHTML = `
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-3">
-              <span class="px-2 py-0.5 rounded text-[10px] font-bold border ${sevClass}">${repSev}</span>
-              <div>
-                <h3 class="text-sm font-semibold text-white hover:text-indigo-400 transition-colors">${escapeHtml(repTitle)}</h3>
-                <div class="flex items-center gap-3 text-[11px] text-slate-400 mt-1">
-                  <span class="font-mono text-indigo-400">#${rep.id}</span>
-                  <span>Source: <strong class="text-slate-300">${rep.sourceType}</strong></span>
-                  <span>Masked Entities: <strong class="text-emerald-400">${rep.tokenLedger?.length || 0}</strong></span>
-                  <span>${new Date(rep.createdAt).toLocaleString()}</span>
-                </div>
-              </div>
+          <div class="flex-1" onclick="openReportDetail('${rep.id}')">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border ${sevClass}">${sev}</span>
+              <span class="text-xs font-bold text-white">${escapeHtml(diag.incidentTitle || 'Incident Report')}</span>
             </div>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-slate-500"></i>
+            <div class="flex items-center gap-3 text-[11px] text-slate-400 font-mono">
+              <span>Source: <strong class="text-slate-300 font-sans">${escapeHtml(rep.sourceType)}</strong></span>
+              <span>•</span>
+              <span>ID: ${escapeHtml(rep.id)}</span>
+              <span>•</span>
+              <span>${new Date(rep.createdAt).toLocaleString()}</span>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="downloadReportById('${rep.id}')" class="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors" title="Download Markdown">
+              <i data-lucide="download" class="w-4 h-4"></i>
+            </button>
+            <button onclick="openReportDetail('${rep.id}')" class="px-3 py-1.5 rounded-lg bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 text-xs font-semibold border border-indigo-500/30 transition-colors">
+              Inspect
+            </button>
+            <button onclick="deleteReport('${rep.id}', event)" class="p-2 rounded-lg bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 transition-colors" title="Delete">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
           </div>
         `;
         container.appendChild(card);
       });
-
       lucide.createIcons();
     }
 
-    function filterReports() {
-      const q = document.getElementById('report-search').value.toLowerCase();
-      const filtered = reportsList.filter(r => 
-        (r.diagnostic?.incidentTitle || '').toLowerCase().includes(q) ||
-        (r.sourceType || '').toLowerCase().includes(q) ||
-        (r.id || '').toLowerCase().includes(q)
-      );
-      renderReportsList(filtered);
+    function openReportDetail(id) {
+      const rep = reportsList.find(r => r.id === id);
+      if (rep) {
+        currentReport = rep;
+        renderPipelineResults(rep);
+        updateStepperSuccess(rep);
+        switchTab('pipeline');
+      }
+    }
+
+    async function deleteReport(id, e) {
+      if (e) e.stopPropagation();
+      if (!confirm('Delete incident report ' + id + '?')) return;
+      try {
+        const res = await fetch('/api/reports/' + id, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          fetchReports();
+        }
+      } catch (err) {
+        alert('Failed to delete report: ' + err.message);
+      }
     }
 
     async function fetchApiKeys() {
@@ -998,7 +1324,7 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
         });
         if (res.ok) {
           const data = await res.json();
-          apiKeysList = data.keys || data;
+          apiKeysList = Array.isArray(data.keys) ? data.keys : (Array.isArray(data) ? data : []);
           renderApiKeysTable(apiKeysList);
         }
       } catch (e) {
@@ -1016,15 +1342,15 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
           <td class="p-3 font-semibold text-white">${escapeHtml(k.name)}</td>
           <td class="p-3 text-indigo-400 flex items-center gap-2">
             <code>${k.key}</code>
-            <button onclick="navigator.clipboard.writeText('${k.key}')" class="text-slate-500 hover:text-slate-300" title="Copy Key">
+            <button onclick="copyToClipboard('${k.key}')" class="text-slate-500 hover:text-slate-300" title="Copy Key">
               <i data-lucide="copy" class="w-3.5 h-3.5"></i>
             </button>
           </td>
           <td class="p-3 text-slate-400">${new Date(k.createdAt).toLocaleDateString()}</td>
-          <td class="p-3 text-slate-400">${k.lastUsed ? new Date(k.lastUsed).toLocaleDateString() : 'Never'}</td>
+          <td class="p-3 text-slate-400">${k.lastUsedAt ? new Date(k.lastUsedAt).toLocaleDateString() : 'Never'}</td>
           <td class="p-3 text-right">
-            <button onclick="deleteApiKey('${k.id}')" class="text-rose-400 hover:text-rose-300 text-xs font-sans" title="Revoke Key">
-              Revoke
+            <button onclick="deleteApiKey('${k.id}')" class="p-1.5 rounded-lg bg-slate-800 hover:bg-rose-500/20 hover:text-rose-400 text-slate-400 transition-colors">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
             </button>
           </td>
         `;
@@ -1034,7 +1360,7 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
     }
 
     async function createNewApiKey() {
-      const name = prompt('Enter a label for this API key (e.g., "fluent-bit-prod-k8s"):');
+      const name = prompt('Enter a label for this Log Shipper API Key:', 'K8s Cluster Fluent Bit');
       if (!name) return;
 
       try {
@@ -1048,56 +1374,150 @@ Build user: builder_ci@corp.internal on node worker-aws-us-east-1a-10.2.14.99`
         });
         if (res.ok) {
           fetchApiKeys();
-        } else {
-          alert('Failed to create key');
         }
       } catch (e) {
-        alert(e.message);
+        alert('Failed to create key: ' + e.message);
       }
     }
 
     async function deleteApiKey(id) {
-      if (!confirm('Are you sure you want to revoke this ingestion key?')) return;
+      if (!confirm('Revoke this ingestion API key?')) return;
       try {
-        await fetch('/api/keys/' + id, {
+        const res = await fetch('/api/keys/' + id, {
           method: 'DELETE',
           headers: { 'Authorization': `Bearer ${authToken}` }
         });
-        fetchApiKeys();
+        if (res.ok) {
+          fetchApiKeys();
+        }
       } catch (e) {
-        alert(e.message);
+        alert('Failed to delete key: ' + e.message);
       }
     }
 
-    function copyIncidentMarkdown() {
+    async function fetchElkConfig() {
+      try {
+        const res = await fetch('/api/elk/config', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.config) {
+            document.getElementById('elk-url').value = data.config.elasticsearchUrl || 'http://127.0.0.1:9200';
+            document.getElementById('elk-index').value = data.config.indexPattern || 'filebeat-*,logstash-*';
+            document.getElementById('elk-query').value = data.config.filterQuery || 'log.level:ERROR';
+          }
+        }
+      } catch (e) {}
+    }
+
+    async function saveElkConfig() {
+      const elasticsearchUrl = document.getElementById('elk-url').value;
+      const indexPattern = document.getElementById('elk-index').value;
+      const filterQuery = document.getElementById('elk-query').value;
+
+      try {
+        const res = await fetch('/api/elk/config', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ elasticsearchUrl, indexPattern, filterQuery, enabled: true })
+        });
+        if (res.ok) {
+          alert('ELK Harvester configuration saved successfully!');
+        }
+      } catch (e) {
+        alert('Error saving ELK config: ' + e.message);
+      }
+    }
+
+    async function testElkConnection() {
+      const elasticsearchUrl = document.getElementById('elk-url').value;
+      try {
+        const res = await fetch('/api/elk/test', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ elasticsearchUrl })
+        });
+        const data = await res.json();
+        if (data.connected) {
+          alert(`Success! Connected to Elasticsearch cluster: ${data.clusterName} (${data.version})`);
+        } else {
+          alert('Connection failed: ' + (data.error || 'Cluster unreachable'));
+        }
+      } catch (e) {
+        alert('Error testing connection: ' + e.message);
+      }
+    }
+
+    async function triggerElkHarvestNow() {
+      const btn = document.getElementById('elk-harvest-btn');
+      btn.disabled = true;
+      btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Harvesting...`;
+      lucide.createIcons();
+
+      try {
+        const res = await fetch('/api/elk/harvest-now', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert(`Harvest Complete! Processed ${data.logsHarvested || 0} error documents.`);
+          fetchReports();
+        } else {
+          alert('Harvest note: ' + (data.error || 'No new errors matched'));
+        }
+      } catch (e) {
+        alert('Harvest error: ' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="refresh-cw" class="w-4 h-4"></i> Harvest Now`;
+        lucide.createIcons();
+      }
+    }
+
+    function copyPlaybook() {
       if (!currentReport) return;
-      const r = currentReport;
-      const md = `# [LogOps Incident Report] ${r.diagnostic?.incidentTitle}
-**Severity**: ${r.diagnostic?.severity}
-**Source**: ${r.sourceType}
-**Incident ID**: ${r.id}
-**Entities Redacted**: ${r.tokenLedger?.length || 0}
+      const diag = currentReport.diagnostic || {};
+      const actions = (diag.remediationSteps || diag.remediationActions || []).map((a, i) => `${i+1}. ${a}`).join('\n');
+      const text = `=== INCIDENT REMEDIATION PLAYBOOK ===\nIncident: ${diag.incidentTitle}\nSeverity: ${diag.severity}\n\nROOT CAUSE:\n${diag.rootCause}\n\nREMEDIATION STEPS:\n${actions}\n`;
+      copyToClipboard(text);
+      alert('SRE Remediation Playbook copied to clipboard!');
+    }
 
-## Root Cause Hypothesis
-${r.diagnostic?.rootCauseHypothesis}
+    function downloadMarkdownReport() {
+      if (!currentReport) return;
+      window.location.href = `/api/reports/${currentReport.id}/markdown`;
+    }
 
-## Rehydrated Engineering Action Plan
-${(r.diagnostic?.remediationActions || []).map((a, i) => `${i+1}. ${a}`).join('\n')}
+    function downloadReportById(id) {
+      window.location.href = `/api/reports/${id}/markdown`;
+    }
 
-## Vault Redaction Ledger
-| Token | Entity Type | Original Target |
-|-------|-------------|-----------------|
-${(r.tokenLedger || []).map(t => `| ${t.token} | ${t.type} | ${t.original} |`).join('\n')}
-`;
-      navigator.clipboard.writeText(md);
-      alert('Incident markdown copied to clipboard!');
+    function downloadJsonReport() {
+      if (!currentReport) return;
+      const blob = new Blob([JSON.stringify(currentReport, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentReport.id}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text);
     }
 
     function escapeHtml(str) {
-      if (!str) return '';
-      return String(str).replace(/[&<>"']/g, m => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-      })[m]);
+      if (typeof str !== 'string') return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
     }
   </script>
 </body>

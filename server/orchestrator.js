@@ -17,6 +17,7 @@ class MemoryVault {
     this.vaults.set(sessionId, {
       map: new Map(), // token -> original
       reverseMap: new Map(), // original -> token
+      entities: [],
       createdAt: Date.now()
     });
     return sessionId;
@@ -24,27 +25,28 @@ class MemoryVault {
 
   sanitize(text, sessionId) {
     const sId = sessionId || this.createSession();
-    const session = this.vaults.get(sId) || this.vaults.set(sId, { map: new Map(), reverseMap: new Map(), createdAt: Date.now() }).get(sId);
+    const session = this.vaults.get(sId) || this.vaults.set(sId, { map: new Map(), reverseMap: new Map(), entities: [], createdAt: Date.now() }).get(sId);
 
     let sanitized = text;
     let count = 0;
     const categories = { credentials: 0, network: 0, pii: 0, cloud: 0 };
+    const entities = [];
 
     // Standard detection patterns
     const patterns = [
       { cat: 'credentials', type: 'PASSWORD', regex: /(?:password|passwd|pwd|secret|auth_token|api_key|access_key)\s*[:=]\s*['"]?([a-zA-Z0-9_!@#$%^&*()+\-]{6,64})['"]?/gi },
       { cat: 'credentials', type: 'BEARER_TOKEN', regex: /Bearer\s+([a-zA-Z0-9_\-\.]{20,256})/gi },
-      { cat: 'network', type: 'IPV4', regex: /\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b/g },
+      { cat: 'network', type: 'PRIVATE_IP', regex: /\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b/g },
       { cat: 'network', type: 'PUBLIC_IP', regex: /\b(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-5])\.(?:\d{1,3})\.(?:\d{1,3})\.(?:[1-9]\d?|1\d\d|2[0-4]\d|25[0-5])\b/g },
       { cat: 'pii', type: 'EMAIL', regex: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g },
       { cat: 'cloud', type: 'AWS_KEY', regex: /\bAKIA[0-9A-Z]{16}\b/g },
-      { cat: 'cloud', type: 'JWT', regex: /\beyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\b/g }
+      { cat: 'cloud', type: 'JWT', regex: /\beyJ[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\.[a-zA-Z0-9_-]{10,}\b/g },
+      { cat: 'network', type: 'HOST', regex: /\b(?:[a-zA-Z0-9_-]+\.)+(?:corp\.internal|internal|local|lan|aws|prod)\b/gi }
     ];
 
     for (const p of patterns) {
       sanitized = sanitized.replace(p.regex, (match, captured) => {
         const valToMask = captured || match;
-        // Avoid masking common non-sensitive strings
         if (['127.0.0.1', 'localhost', '0.0.0.0'].includes(valToMask)) return match;
         
         let token = session.reverseMap.get(valToMask);
@@ -54,6 +56,14 @@ class MemoryVault {
           token = `[${p.type}_${count}]`;
           session.map.set(token, valToMask);
           session.reverseMap.set(valToMask, token);
+          const entity = {
+            token,
+            type: p.cat.toUpperCase(),
+            original: valToMask,
+            ruleName: p.type
+          };
+          session.entities.push(entity);
+          entities.push(entity);
         }
         return captured ? match.replace(captured, token) : token;
       });
@@ -63,7 +73,8 @@ class MemoryVault {
       sanitizedText: sanitized,
       sessionId: sId,
       redactedCount: count,
-      byCategory: categories
+      byCategory: categories,
+      entities: session.entities
     };
   }
 
@@ -92,7 +103,7 @@ async function executeLogPipeline(options) {
   const {
     sourceType = 'apache',
     rawLogs = '',
-    filtrUrl = process.env.FILTR_URL || 'http://127.0.0.1:3000',
+    filtrUrl = process.env.FILTR_URL || 'http://127.0.0.1:8080',
     llmUrl = process.env.LLM_URL || 'http://127.0.0.1:11434',
     llmModel = process.env.LLM_MODEL || 'deepseek-r1'
   } = options;
@@ -114,6 +125,7 @@ async function executeLogPipeline(options) {
   let sessionId = '';
   let redactedCount = 0;
   let categories = {};
+  let entities = [];
   let isFiltrLive = false;
 
   try {
@@ -124,7 +136,7 @@ async function executeLogPipeline(options) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         text: rawLogs,
-        strategy: 'consistent_token'
+        masking_strategy: 'consistent_token'
       }),
       signal: controller.signal
     });
@@ -132,10 +144,20 @@ async function executeLogPipeline(options) {
 
     if (filtrRes.ok) {
       const data = await filtrRes.json();
-      sanitizedText = data.sanitizedText || data.text || rawLogs;
-      sessionId = data.sessionId || data.session_id || '';
-      redactedCount = data.stats ? data.stats.totalRedacted : 0;
+      sanitizedText = data.sanitized_text || data.sanitizedText || data.text || rawLogs;
+      sessionId = data.session_id || data.sessionId || '';
+      redactedCount = data.stats ? data.stats.totalRedacted : (data.redactions ? data.redactions.length : 0);
       categories = data.stats ? data.stats.byCategory : {};
+      
+      if (Array.isArray(data.redactions)) {
+        entities = data.redactions.map(r => ({
+          token: r.masked_token,
+          type: r.category ? r.category.toUpperCase() : (r.rule_name || 'ENTITY'),
+          original: rawLogs.slice(r.start, r.end),
+          ruleName: r.rule_name,
+          severity: r.severity || 'high'
+        }));
+      }
       isFiltrLive = true;
     } else {
       throw new Error(`filtr responded with HTTP ${filtrRes.status}`);
@@ -147,6 +169,7 @@ async function executeLogPipeline(options) {
     sessionId = localRes.sessionId;
     redactedCount = localRes.redactedCount;
     categories = localRes.byCategory;
+    entities = localRes.entities;
   }
 
   // ---------------------------------------------------------------------------
@@ -201,7 +224,7 @@ ${sanitizedText.slice(0, 10000)}`,
     }
   } catch (err) {
     // Intelligent domain-specific Diagnostic Simulator when Ollama container is offline
-    llmRawOutput = generateDomainSpecificDiagnosis(sourceType, parsedEvents, sanitizedText);
+    llmRawOutput = generateDomainSpecificDiagnosis(sourceType, parsedEvents, sanitizedText, entities);
   }
 
   // ---------------------------------------------------------------------------
@@ -210,7 +233,7 @@ ${sanitizedText.slice(0, 10000)}`,
   let rehydratedReportText = '';
   let restoredCount = 0;
 
-  if (isFiltrLive) {
+  if (isFiltrLive && sessionId) {
     try {
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 4000);
@@ -219,7 +242,7 @@ ${sanitizedText.slice(0, 10000)}`,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           text: llmRawOutput,
-          sessionId
+          session_id: sessionId
         }),
         signal: controller.signal
       });
@@ -227,8 +250,8 @@ ${sanitizedText.slice(0, 10000)}`,
 
       if (hydrateRes.ok) {
         const hData = await hydrateRes.json();
-        rehydratedReportText = hData.hydratedText || llmRawOutput;
-        restoredCount = hData.restoredCount || 0;
+        rehydratedReportText = hData.hydrated_text || hData.hydratedText || hData.text || llmRawOutput;
+        restoredCount = hData.hydrated_tokens ?? hData.restoredCount ?? 0;
       } else {
         throw new Error(`filtr hydrate returned ${hydrateRes.status}`);
       }
@@ -248,7 +271,6 @@ ${sanitizedText.slice(0, 10000)}`,
   try {
     structuredReport = JSON.parse(rehydratedReportText);
   } catch {
-    // Extract JSON substring if wrapped in markdown fences
     const jsonMatch = rehydratedReportText.match(/```(?:json)?\s*([\s\S]*?)```/);
     if (jsonMatch) {
       try {
@@ -276,10 +298,20 @@ ${sanitizedText.slice(0, 10000)}`,
     id: `rep_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`,
     createdAt: new Date().toISOString(),
     durationMs,
+    executionMs: durationMs,
     sourceType,
     rawLogLines: parsedEvents.length,
     filtrEngineStatus: isFiltrLive ? 'live_container' : 'native_engine',
     llmEngineStatus: isLlmLive ? `ollama_${llmModel}` : 'intelligence_simulator',
+    diagnostic: structuredReport,
+    tokenLedger: entities,
+    parsedMetadata: {
+      eventType: `${sourceType.toUpperCase()} Incident`,
+      totalLines: parsedEvents.length,
+      errors: errorCount,
+      warnings: warnCount,
+      info: infoCount
+    },
     stages: {
       ingest: {
         totalLines: parsedEvents.length,
@@ -292,7 +324,8 @@ ${sanitizedText.slice(0, 10000)}`,
         sessionId,
         redactedCount,
         byCategory: categories,
-        sanitizedPreview: sanitizedText.slice(0, 1500)
+        sanitizedPreview: sanitizedText,
+        entities
       },
       llmInference: {
         model: llmModel,
@@ -308,9 +341,9 @@ ${sanitizedText.slice(0, 10000)}`,
 }
 
 /**
- * Intelligent Fallback Domain Diagnostics Engine
+ * Intelligent Domain Diagnostics Engine (Weaves Redacted Tokens for Reversible Rehydration)
  */
-function generateDomainSpecificDiagnosis(sourceType, events, text) {
+function generateDomainSpecificDiagnosis(sourceType, events, text, entities = []) {
   let title = '';
   let severity = 'CRITICAL';
   let rootCause = '';
@@ -318,70 +351,145 @@ function generateDomainSpecificDiagnosis(sourceType, events, text) {
   let steps = [];
   const timeline = [];
 
+  const tokens = entities.map(e => e.token);
+  const primaryToken = tokens[0] || '[SENSITIVE_TARGET_1]';
+  const secondaryToken = tokens[1] || '[SENSITIVE_USER_1]';
+
   switch ((sourceType || '').toLowerCase()) {
     case 'weblogic':
-      title = 'WebLogic Server Thread Deadlock & DataSource Pool Exhaustion';
+      title = 'Oracle WebLogic Server Stuck Thread Deadlock & DataSource Pool Exhaustion';
       severity = 'CRITICAL';
-      rootCause = 'WebLogic Server execute threads entered STUCK state (BEA-000337) waiting for response from backend database pool. Connection pool reached MaxCapacity (100) and timed out after 30000ms.';
-      components = ['WebLogic Kernel Default Queue', 'JDBC ConnectionPool: oraDS', 'ActiveTransactions'];
+      rootCause = `WebLogic execute threads entered STUCK state (BEA-000337) waiting on JDBC connection pool. Backend database endpoint ${primaryToken} connection timed out under account ${secondaryToken}. Connection allocation exceeded StuckThreadMaxTime threshold.`;
+      components = ['WebLogic Kernel Default Queue', `JDBC Pool: ${primaryToken}`, 'ActiveTransactions'];
       steps = [
-        'Increase JDBC Connection Pool max capacity: configure MaxCapacity=150 in weblogic-ra.xml.',
-        'Investigate long-running uncommitted SQL queries blocking thread workers via WLST: threadDump().',
+        `Increase JDBC Connection Pool max capacity: configure MaxCapacity=150 in weblogic-ra.xml targeting ${primaryToken}.`,
+        `Investigate uncommitted transactions holding row locks under account ${secondaryToken} via WLST threadDump().`,
         'Tune StuckThreadMaxTime from 600s to 300s to enable early alert signaling.',
-        'Execute graceful server restart: ./stopWebLogic.sh && ./startWebLogic.sh.'
+        `Gracefully restart WebLogic server instance: ./stopWebLogic.sh && ./startWebLogic.sh.`
       ];
       break;
 
     case 'kafka':
-      title = 'Kafka Broker Leader Partition Loss & Rebalance Storm';
+      title = 'Apache Kafka Broker Leader Partition Loss & Quorum Rebalance Storm';
       severity = 'HIGH';
-      rootCause = 'Broker heartbeat timed out (session.timeout.ms=10000). ZooKeeper / KRaft metadata lost quorum synchronization, causing partition replica out-of-sync (ISR shrinkage) and consumer group rebalance loops.';
-      components = ['Kafka Broker Cluster', 'KRaft Metadata Quorum', 'Consumer Group: telemetry-consumers'];
+      rootCause = `Kafka broker heartbeat timed out (session.timeout.ms=10000). Principal ${secondaryToken} encountered authorization failures when connecting to broker ${primaryToken}, triggering partition replica out-of-sync (ISR shrinkage) and consumer group rebalances.`;
+      components = ['Kafka Broker Cluster', `Broker: ${primaryToken}`, `Consumer Group: ${secondaryToken}`];
       steps = [
-        'Inspect broker disk I/O and JVM GC pauses: tail -n 100 kafka-server-gc.log.',
-        'Increase max.poll.interval.ms from 300000 to 600000 to prevent premature consumer ejection.',
-        'Verify topic partition ISR status: kafka-topics.sh --describe --under-replicated-partitions.',
-        'Trigger controlled leader re-election: kafka-leader-election.sh --election-type preferred.'
+        `Verify cluster network reachability and latency to broker ${primaryToken}.`,
+        `Audit ACL authorization permissions for client ${secondaryToken} via kafka-acls.sh.`,
+        'Increase max.poll.interval.ms to 600000 to prevent premature consumer ejection.',
+        'Trigger preferred partition leader election: kafka-leader-election.sh --election-type preferred.'
       ];
       break;
 
     case 'windows':
-      title = 'Windows Active Directory Kerberos Pre-Authentication Failure & Service Crash';
+    case 'winevent':
+      title = 'Windows Active Directory Kerberos Brute-Force & SCM Service Crash';
       severity = 'CRITICAL';
-      rootCause = 'Multiple Event 4625 (Logon Failure) detected due to bad password attempts (Substatus 0xC000006A), followed by Event 7034 (Service Control Manager unexpected termination of enterprise sync agent).';
-      components = ['Security Account Manager (SAM)', 'Kerberos KDC', 'Service Control Manager (SCM)'];
+      rootCause = `Multiple Event 4625 (Logon Failures) detected from source workstation ${primaryToken} targeting account ${secondaryToken} (Substatus 0xC000006A), followed by Event 7034 (Service Control Manager unexpected termination).`;
+      components = ['Security Account Manager (SAM)', 'Kerberos KDC', `Host: ${primaryToken}`];
       steps = [
-        'Check Active Directory lockout status for affected service accounts via PowerShell: Search-ADAccount -LockedOut.',
-        'Verify SPN configuration to resolve Kerberos ticket mismatches: setspn -L <AccountName>.',
+        `Isolate source workstation ${primaryToken} to prevent credential stuffing spray attacks.`,
+        `Reset password and unlock Active Directory account ${secondaryToken} via Search-ADAccount.`,
         'Configure SCM Service Recovery action to auto-restart upon failure in services.msc.',
-        'Audit surrounding IP addresses in Event 4625 for signs of brute-force password spraying.'
+        'Review Windows Security Event 4625 audit logs for lateral movement.'
       ];
       break;
 
     case 'jenkins':
-      title = 'Jenkins CI/CD Build Agent Out-Of-Memory & Pipeline Timeout';
+      title = 'Jenkins CI/CD Build Agent JVM Out-Of-Memory & Pipeline Crash';
       severity = 'HIGH';
-      rootCause = 'Pipeline build container exhausted JVM heap space during Maven test execution (java.lang.OutOfMemoryError: Java heap space), leading to slave agent disconnect and pipeline abort.';
-      components = ['Jenkins Controller', 'Kubernetes Dynamic Agent Pod', 'Maven Build Runner'];
+      rootCause = `Pipeline build runner exhausted JVM heap space during test execution (java.lang.OutOfMemoryError: Java heap space) on agent ${primaryToken} connecting to service ${secondaryToken}.`;
+      components = ['Jenkins Controller', `Dynamic Worker: ${primaryToken}`, `Backend Cache: ${secondaryToken}`];
       steps = [
         'Increase JVM heap options in pipeline Jenkinsfile: MAVEN_OPTS="-Xms1024m -Xmx4096m -XX:+UseG1GC".',
-        'Ensure Jenkins agent container memory request is bumped to 6Gi in PodTemplate definition.',
-        'Prune stale workspace artifacts: rm -rf ~/.m2/repository/stale_snapshots.',
-        'Re-trigger stage build with clean test parameters.'
+        `Verify connection credentials and firewall rules connecting to ${secondaryToken}.`,
+        'Ensure Jenkins agent container memory request is set to 6Gi in PodTemplate definition.',
+        'Prune stale workspace artifacts: rm -rf ~/.m2/repository/stale_snapshots.'
+      ];
+      break;
+
+    case 'kubernetes':
+    case 'k8s':
+      title = 'Kubernetes Pod CrashLoopBackOff & OOMKilled Memory Limit Reached';
+      severity = 'CRITICAL';
+      rootCause = `Container in pod ${primaryToken} was terminated with exit code 137 (OOMKilled). The application memory usage exceeded container resource limit (1024Mi) while serving traffic from upstream ${secondaryToken}.`;
+      components = [`Pod: ${primaryToken}`, 'Kubelet cgroup driver', `Service: ${secondaryToken}`];
+      steps = [
+        `Increase container memory limit in deployment manifest from 1024Mi to 2048Mi for pod ${primaryToken}.`,
+        `Inspect heap dump and memory leak traces using kubectl logs ${primaryToken} --previous.`,
+        `Check readiness probe thresholds for service ${secondaryToken} to prevent cascading pod restarts.`,
+        'Apply updated deployment configuration: kubectl apply -f deployment.yaml.'
+      ];
+      break;
+
+    case 'database':
+    case 'postgres':
+    case 'postgresql':
+    case 'mysql':
+      title = 'Database Connection Pool Exhaustion & Concurrency Deadlock';
+      severity = 'CRITICAL';
+      rootCause = `Database server at ${primaryToken} reached max_connections limit. Multiple transactions under user ${secondaryToken} deadlocked while attempting to acquire row locks on high-velocity transactional tables.`;
+      components = [`DB Host: ${primaryToken}`, `User: ${secondaryToken}`, 'Transaction Lock Manager'];
+      steps = [
+        `Increase max_connections in postgresql.conf on ${primaryToken} or deploy PgBouncer connection pooler.`,
+        `Identify and terminate blocking queries: SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE usename='${secondaryToken}'.`,
+        'Tune lock_timeout and statement_timeout to abort runaway transactions gracefully.',
+        'Add index on foreign key columns to eliminate table scan locks.'
+      ];
+      break;
+
+    case 'aws':
+    case 'cloudwatch':
+      title = 'AWS Lambda Task Execution Timeout & IAM AccessDenied Failure';
+      severity = 'CRITICAL';
+      rootCause = `Serverless function execution timed out after 30.00 seconds. Caller using IAM identity ${secondaryToken} received AccessDeniedException when attempting to access cloud resource ${primaryToken}.`;
+      components = ['AWS Lambda', `IAM Identity: ${secondaryToken}`, `Target Resource: ${primaryToken}`];
+      steps = [
+        `Attach required IAM permission policy to role ${secondaryToken} granting PutObject / KMS Decrypt on ${primaryToken}.`,
+        'Increase Lambda function timeout from 30 seconds to 60 seconds in AWS console / Terraform.',
+        'Configure Dead Letter Queue (DLQ) or SQS on-failure destination for retry observability.',
+        'Verify VPC endpoint security group egress rules allow traffic to cloud services.'
+      ];
+      break;
+
+    case 'redis':
+      title = 'Redis Cache Memory Exhaustion (OOM) & Sentinel Master Failover';
+      severity = 'HIGH';
+      rootCause = `Redis master instance at ${primaryToken} rejected write commands with error: OOM command not allowed when used memory > 'maxmemory'. Client ${secondaryToken} triggered Sentinel failover election.`;
+      components = [`Redis Master: ${primaryToken}`, `Client: ${secondaryToken}`, 'Redis Sentinel Quorum'];
+      steps = [
+        `Update Redis maxmemory-policy to volatile-lru or allkeys-lru on instance ${primaryToken}.`,
+        'Increase available RAM allocation or deploy Redis Cluster sharding.',
+        `Audit client ${secondaryToken} TTL settings to ensure keys have appropriate expiration times.`,
+        'Monitor cache replication status via redis-cli -h info replication.'
+      ];
+      break;
+
+    case 'nginx':
+      title = 'Nginx Reverse Proxy Upstream 502 Bad Gateway & SSL Handshake Error';
+      severity = 'CRITICAL';
+      rootCause = `Nginx edge proxy failed to establish secure TLS upstream socket with application server at ${primaryToken} for client ${secondaryToken} (502 Bad Gateway: connect() failed / SSL_do_handshake() failed).`;
+      components = ['Nginx Gateway', `Upstream App: ${primaryToken}`, `Client: ${secondaryToken}`];
+      steps = [
+        `Verify upstream application server is listening on target port at ${primaryToken}.`,
+        'Validate SSL certificate validity and trust chain: openssl s_client -connect.',
+        'Increase proxy_connect_timeout and proxy_read_timeout to 60s in nginx.conf.',
+        'Reload Nginx configuration safely: nginx -s reload.'
       ];
       break;
 
     case 'apache':
     default:
-      title = 'Apache HTTPD Reverse Proxy Upstream 502/504 Gateway Timeout';
+      title = 'Apache HTTPD Upstream 502/504 Gateway Timeout & Worker Saturation';
       severity = 'HIGH';
-      rootCause = 'Apache mod_proxy failed to establish socket connection to upstream application server (AH00898: Error reading from remote server). MaxRequestWorkers threshold was reached.';
-      components = ['Apache mod_proxy_http', 'mod_mpm_event', 'Upstream Port: 8080'];
+      rootCause = `Apache mod_proxy failed to read status line from remote upstream ${primaryToken} requested by client ${secondaryToken}. Server reached MaxRequestWorkers limit.`;
+      components = ['Apache mod_proxy_http', `Upstream Server: ${primaryToken}`, `Client: ${secondaryToken}`];
       steps = [
-        'Increase ProxyTimeout from 60 to 120 seconds in httpd.conf.',
-        'Increase ServerLimit and MaxRequestWorkers in mpm_event.conf: MaxRequestWorkers 800.',
-        'Inspect upstream application server health and GC pause durations.',
-        'Gracefully reload Apache server: apachectl -k graceful.'
+        `Increase ProxyTimeout from 60 to 120 seconds in httpd.conf for upstream ${primaryToken}.`,
+        'Increase ServerLimit and MaxRequestWorkers in mpm_event.conf to handle peak concurrency.',
+        `Inspect network socket connections and health on ${primaryToken}.`,
+        'Gracefully reload Apache: apachectl -k graceful.'
       ];
       break;
   }
